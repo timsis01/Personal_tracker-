@@ -1,0 +1,612 @@
+.landing {
+  min-height: 100vh;
+  background: #f7f9fd;
+  color: #203149;
+}
+
+.landing-shell {
+  width: min(100% - 64px, 1240px);
+  margin-inline: auto;
+}
+
+.landing-header {
+  border-bottom: 1px solid #e8edf5;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.landing-header-inner {
+  height: 84px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.landing-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #203149;
+  text-decoration: none;
+  font-size: 30px;
+  font-weight: 760;
+  letter-spacing: -1.6px;
+}
+
+.landing-logo-dot {
+  color: #5274cc;
+}
+.landing-header-actions,
+.landing-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.landing-link {
+  padding: 12px 16px;
+  font-size: 16px;
+  font-weight: 620;
+  color: #405475;
+}
+
+.landing-link:hover {
+  color: #5274cc;
+}
+
+.landing-header-cta,
+.landing-primary {
+  border-radius: 11px;
+  background: #5274cc;
+  color: white;
+  font-weight: 650;
+  box-shadow: 0 8px 20px #5274cc22;
+  transition:
+    background 160ms ease,
+    transform 160ms ease;
+}
+
+.landing-header-cta:hover,
+.landing-primary:hover {
+  background: #3e62bf;
+  transform: translateY(-2px);
+}
+.landing-header-cta {
+  padding: 13px 20px;
+  font-size: 15px;
+}
+
+.landing-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 0.94fr) minmax(0, 1.06fr);
+  align-items: center;
+  gap: clamp(32px, 5vw, 78px);
+  padding: clamp(58px, 6vw, 88px) 0 62px;
+}
+
+.landing-copy {
+  max-width: 560px;
+}
+.landing h1 {
+  margin: 0 0 22px;
+  font-size: clamp(45px, 4.2vw, 65px);
+  font-weight: 740;
+  line-height: 1.09;
+  letter-spacing: -3.2px;
+}
+
+.landing h1 em {
+  color: #5274cc;
+  font-style: normal;
+}
+.landing-intro {
+  max-width: 520px;
+  color: #65758d;
+  font-size: 18px;
+  line-height: 1.62;
+  margin-bottom: 30px;
+}
+.landing-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 16px 22px;
+  font-size: 16px;
+}
+.landing-secondary {
+  padding: 15px 10px;
+  color: #445b7f;
+  font-size: 15px;
+  font-weight: 600;
+}
+.landing-secondary:hover {
+  color: #5274cc;
+}
+.landing-showcase {
+  position: relative;
+  border: 1px solid #dfe7f5;
+  border-radius: 25px;
+  padding: 12px;
+  background: #fff;
+  box-shadow: 0 24px 65px #243c7020;
+}
+.landing-showcase.is-celebrating {
+  animation: landing-card-glow 1050ms ease-out;
+}
+
+.landing-visual {
+  position: relative;
+  overflow: hidden;
+  border-radius: 16px;
+  aspect-ratio: 1.7;
+  background: #3156ac;
+}
+.landing-visual img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.landing-visual picture {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transition: transform 650ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.landing-showcase.is-celebrating .landing-visual picture {
+  transform: scale(1.035);
+}
+.landing-celebration {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.landing-celebration::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 49%;
+  width: 220px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ffffff99 0, #b9d8ff5c 31%, transparent 72%);
+  transform: translate(-50%, -50%) scale(0.3);
+  animation: landing-light-burst 950ms ease-out both;
+}
+.landing-celebration i {
+  --angle: 0deg;
+  position: absolute;
+  left: 50%;
+  top: 47%;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: white;
+  box-shadow: 0 0 12px white;
+  opacity: 0;
+  animation: landing-spark-burst 1150ms ease-out both;
+  transform: translate(-50%, -50%) rotate(var(--angle));
+}
+.landing-celebration i:nth-child(2n) {
+  background: #a7f0e4;
+  box-shadow: 0 0 12px #a7f0e4;
+}
+.landing-celebration i:nth-child(1) {
+  --angle: 0deg;
+}
+.landing-celebration i:nth-child(2) {
+  --angle: 30deg;
+  animation-delay: 40ms;
+}
+.landing-celebration i:nth-child(3) {
+  --angle: 60deg;
+  animation-delay: 80ms;
+}
+.landing-celebration i:nth-child(4) {
+  --angle: 90deg;
+  animation-delay: 30ms;
+}
+.landing-celebration i:nth-child(5) {
+  --angle: 120deg;
+  animation-delay: 100ms;
+}
+.landing-celebration i:nth-child(6) {
+  --angle: 150deg;
+  animation-delay: 50ms;
+}
+.landing-celebration i:nth-child(7) {
+  --angle: 180deg;
+  animation-delay: 70ms;
+}
+.landing-celebration i:nth-child(8) {
+  --angle: 210deg;
+  animation-delay: 20ms;
+}
+.landing-celebration i:nth-child(9) {
+  --angle: 240deg;
+  animation-delay: 90ms;
+}
+.landing-celebration i:nth-child(10) {
+  --angle: 270deg;
+  animation-delay: 50ms;
+}
+.landing-celebration i:nth-child(11) {
+  --angle: 300deg;
+  animation-delay: 110ms;
+}
+.landing-celebration i:nth-child(12) {
+  --angle: 330deg;
+  animation-delay: 60ms;
+}
+@keyframes landing-card-glow {
+  0%,
+  100% {
+    box-shadow: 0 24px 65px #243c7020;
+  }
+  42% {
+    box-shadow:
+      0 0 0 7px #5274cc24,
+      0 30px 70px #5274cc4a;
+  }
+}
+@keyframes landing-light-burst {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.3);
+  }
+  35% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.8);
+  }
+}
+@keyframes landing-spark-burst {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(var(--angle)) translateY(0) scale(0.3);
+  }
+  22% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(var(--angle)) translateY(-145px) scale(0.65);
+  }
+}
+.landing-visual-label {
+  position: absolute;
+  bottom: 18px;
+  left: 20px;
+  right: 20px;
+  width: fit-content;
+  max-width: calc(100% - 40px);
+  padding: 9px 13px;
+  border: 1px solid #ffffff4a;
+  border-radius: 8px;
+  background: #122c67b8;
+  color: white;
+  font-size: 14px;
+  line-height: 1.35;
+  backdrop-filter: blur(8px);
+  z-index: 1;
+}
+.landing-reward {
+  position: absolute;
+  z-index: 2;
+  right: 20px;
+  top: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 13px;
+  border: 1px solid #ffffff80;
+  border-radius: 999px;
+  background: #ffffffed;
+  color: #3159ac;
+  font-size: 15px;
+  font-weight: 750;
+  box-shadow: 0 10px 25px #12336d38;
+  animation: landing-reward-pop 1800ms ease-out both;
+}
+@keyframes landing-reward-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.6);
+  }
+  25% {
+    opacity: 1;
+    transform: translateY(0) scale(1.08);
+  }
+  42% {
+    transform: translateY(0) scale(1);
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-18px) scale(0.96);
+  }
+}
+
+.landing-preview {
+  padding: 21px 18px 10px;
+}
+.landing-preview-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+}
+.landing-preview-top > div:first-child {
+  display: grid;
+  gap: 4px;
+}
+.landing-preview-label {
+  color: #8493a9;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1.1px;
+}
+.landing-preview-top strong {
+  font-size: 22px;
+  font-weight: 710;
+  letter-spacing: -0.6px;
+}
+.landing-preview-flame {
+  display: grid;
+  place-items: center;
+  width: 43px;
+  height: 43px;
+  border-radius: 12px;
+  color: white;
+  background: #5274cc;
+}
+.landing-preview-days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 17px;
+}
+.landing-preview-days > div {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  color: #7d8ba0;
+  font-size: 13px;
+}
+.landing-preview-days button {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  color: #7183a2;
+  background: #edf2f9;
+  border: 1px dashed #b7c5db;
+  transition:
+    transform 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease;
+}
+.landing-preview-days button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 5px 10px #243c7020;
+}
+.landing-preview-days button.marked {
+  color: white;
+  background: #50b79c;
+  border-color: #50b79c;
+}
+.landing-showcase.is-celebrating .landing-preview-days button.marked {
+  animation: landing-check-wave 550ms ease-out both;
+}
+.landing-showcase.is-celebrating .landing-preview-days > div:nth-child(2) button {
+  animation-delay: 55ms;
+}
+.landing-showcase.is-celebrating .landing-preview-days > div:nth-child(3) button {
+  animation-delay: 110ms;
+}
+.landing-showcase.is-celebrating .landing-preview-days > div:nth-child(4) button {
+  animation-delay: 165ms;
+}
+.landing-showcase.is-celebrating .landing-preview-days > div:nth-child(5) button {
+  animation-delay: 220ms;
+}
+.landing-showcase.is-celebrating .landing-preview-days > div:nth-child(6) button {
+  animation-delay: 275ms;
+}
+.landing-showcase.is-celebrating .landing-preview-days > div:nth-child(7) button {
+  animation-delay: 330ms;
+}
+@keyframes landing-check-wave {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-6px) scale(1.15);
+  }
+}
+.landing-preview-days button:focus-visible {
+  outline: 3px solid #8fbcff;
+  outline-offset: 3px;
+}
+.landing-preview-flame.is-complete {
+  animation: landing-flame-pop 650ms ease both;
+  background: #3f65c7;
+  box-shadow: 0 0 0 7px #5274cc1e;
+}
+@keyframes landing-flame-pop {
+  0% {
+    transform: scale(0.8) rotate(-10deg);
+  }
+  55% {
+    transform: scale(1.18) rotate(7deg);
+  }
+  100% {
+    transform: scale(1) rotate(0);
+  }
+}
+
+.landing-benefits {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+  padding: 24px 0 46px;
+  border-top: 1px solid #e1e8f3;
+}
+.landing-benefits > div {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  color: #5274cc;
+}
+.landing-benefits p {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  line-height: 1.35;
+}
+.landing-benefits strong {
+  color: #253650;
+  font-size: 16px;
+  font-weight: 690;
+}
+.landing-benefits span {
+  color: #77879d;
+  font-size: 14px;
+}
+.landing-footer {
+  border-top: 1px solid #e1e8f3;
+  padding-block: 22px 28px;
+  color: #8b98aa;
+  font-size: 13px;
+}
+
+@media (max-width: 920px) {
+  .landing-hero {
+    grid-template-columns: 1fr;
+    gap: 38px;
+    padding-top: 55px;
+  }
+  .landing-copy {
+    max-width: 680px;
+  }
+  .landing-showcase {
+    max-width: 680px;
+  }
+}
+
+@media (max-width: 600px) {
+  .landing-shell {
+    width: min(100% - 36px, 1240px);
+  }
+  .landing-header-inner {
+    height: 72px;
+  }
+  .landing-logo {
+    font-size: 26px;
+  }
+  .landing-logo img {
+    width: 34px;
+    height: 34px;
+  }
+  .landing-header-cta {
+    display: none;
+  }
+  .landing-link {
+    padding-right: 0;
+  }
+  .landing-hero {
+    padding: 51px 0 40px;
+    gap: 32px;
+  }
+  .landing h1 {
+    font-size: clamp(40px, 11vw, 54px);
+    letter-spacing: -2.3px;
+    margin-bottom: 18px;
+  }
+  .landing-intro {
+    font-size: 16px;
+    margin-bottom: 24px;
+  }
+  .landing-actions {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 7px;
+  }
+  .landing-primary {
+    width: 100%;
+  }
+  .landing-showcase {
+    border-radius: 18px;
+    padding: 8px;
+  }
+  .landing-visual {
+    border-radius: 12px;
+  }
+  .landing-visual-label {
+    bottom: 10px;
+    left: 10px;
+    right: 10px;
+    max-width: calc(100% - 20px);
+    font-size: 12px;
+    padding: 7px 9px;
+  }
+  .landing-reward {
+    right: 10px;
+    top: 10px;
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+  .landing-preview {
+    padding: 17px 9px 8px;
+  }
+  .landing-preview-top strong {
+    font-size: 19px;
+  }
+  .landing-preview-days {
+    gap: 3px;
+  }
+  .landing-preview-days button {
+    width: 28px;
+    height: 28px;
+  }
+  .landing-benefits {
+    grid-template-columns: 1fr;
+    gap: 18px;
+    padding-block: 24px 32px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-header-cta,
+  .landing-primary {
+    transition: none;
+  }
+  .landing-preview-days button {
+    transition: none;
+  }
+  .landing-preview-flame.is-complete {
+    animation: none;
+  }
+  .landing-showcase.is-celebrating,
+  .landing-showcase.is-celebrating .landing-preview-days button.marked,
+  .landing-celebration::before,
+  .landing-celebration i {
+    animation: none;
+  }
+  .landing-reward {
+    display: none;
+  }
+  .landing-visual picture {
+    transition: none;
+  }
+  .landing-celebration {
+    display: none;
+  }
+}

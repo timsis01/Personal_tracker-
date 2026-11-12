@@ -39,11 +39,13 @@ export function StreakPanel({
         <div className="global-streak-value">
           <strong>{streak.current}</strong>
           <span>{label(streak.current)} подряд</span>
-          <small>Рекорд: {streak.best}</small>
+        </div>
+        <div className="streak-record">
+          Рекорд: <strong>{streak.best}</strong>
         </div>
         <p>
           {streak.todayComplete
-            ? "Все привычки на сегодня выполнены. Серия продолжена!"
+            ? "Сегодня всё выполнено — серия продолжается."
             : streak.today.total
               ? "Выполните весь план на день, чтобы " +
                 (streak.current ? "сохранить огонь." : "зажечь огонь.")

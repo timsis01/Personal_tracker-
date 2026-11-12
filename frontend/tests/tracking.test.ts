@@ -5,6 +5,7 @@ import {
   calendarPeriod,
   calendarWeeks,
   planned,
+  recentPlannedDate,
   findHabits,
   shift,
   weekday,
@@ -28,6 +29,17 @@ test("поиск не ограничивает общий список сего�
   assert.equal(findHabits([sport, other]).length, 2);
   assert.deepEqual(findHabits([sport, other], "чтен"), [other]);
   assert.deepEqual(findHabits([sport, other], "не существует"), []);
+});
+
+test("история открывает последний день по расписанию, даже если сегодня выходной", () => {
+  assert.equal(recentPlannedDate(sport, "2026-11-12"), "2026-11-11");
+  assert.equal(
+    recentPlannedDate(
+      { ...sport, weekdays: [4], start_date: "2026-11-12" },
+      "2026-11-12",
+    ),
+    null,
+  );
 });
 test("недельный диапазон начинается с понедельника и пересекает границы месяца и года", () => {
   const p = calendarPeriod("2027-01-01", "week");
@@ -91,6 +103,16 @@ test("пропуск одной привычки обрывает общую с�
   const s = globalStreak([a, b], "2026-11-12");
   assert.equal(s.current, 0);
   assert.equal(s.best, 2);
+});
+
+test("исправление забытой отметки за прошлый день восстанавливает общую серию", () => {
+  const a = habit(1, ["2026-11-09", "2026-11-10", "2026-11-11", "2026-11-12"]);
+  const b = habit(2, ["2026-11-09", "2026-11-10", "2026-11-12"]);
+  assert.equal(globalStreak([a, b], "2026-11-12").current, 1);
+  b.entries["2026-11-11"] = { status: "done" };
+  assert.equal(globalStreak([a, b], "2026-11-12").current, 4);
+  delete b.entries["2026-11-11"];
+  assert.equal(globalStreak([a, b], "2026-11-12").current, 1);
 });
 test("выходные нейтральны и не добавляют фиктивные дни в общую серию", () => {
   const a = habit(1, ["2026-11-06", "2026-11-09", "2026-11-11"], [0, 2, 4], "2026-11-06");

@@ -26,6 +26,7 @@ import {
   shift,
   weekday,
   planned,
+  recentPlannedDate,
   calendarPeriod,
   calendarWeeks,
   findHabits,
@@ -411,17 +412,29 @@ function MarkEditor({
   onSave: (habit: Habit) => void;
   onClose: () => void;
 }) {
-  const [state, setStatus] = useState(status(habit, date)),
+  const [selectedDate, setSelectedDate] = useState(date),
+    [state, setStatus] = useState(status(habit, date)),
     [note, setNote] = useState(habit.entries[date]?.note || ""),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
+  const dateAvailable = planned(habit, selectedDate) && selectedDate <= todayKey();
+  function changeDate(nextDate: string) {
+    setSelectedDate(nextDate);
+    setStatus(status(habit, nextDate));
+    setNote(habit.entries[nextDate]?.note || "");
+    setError("");
+  }
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (!dateAvailable) {
+      setError("Выберите прошедший день из расписания этой привычки.");
+      return;
+    }
     setBusy(true);
     try {
       onSave(
         await api<Habit>("/habits/" + habit.id + "/complete/", {
-          date,
+          date: selectedDate,
           status: state,
           note,
         }),
@@ -435,10 +448,26 @@ function MarkEditor({
   return (
     <Modal
       title={habit.title}
-      subtitle={formatDay(date)}
+      subtitle="Отметьте выполнение сегодня или исправьте запись за прошлый день."
       onClose={() => !busy && onClose()}
     >
       <form onSubmit={submit}>
+        <div className="field">
+          <label htmlFor="mark-date">Дата отметки</label>
+          <input
+            id="mark-date"
+            type="date"
+            value={selectedDate}
+            min={habit.start_date}
+            max={todayKey()}
+            onChange={(e) => changeDate(e.target.value)}
+          />
+          <span className="field-hint">
+            {dateAvailable
+              ? "Можно изменить или убрать отметку за этот день."
+              : "В этот день привычка не была запланирована."}
+          </span>
+        </div>
         <fieldset>
           <legend>Результат дня</legend>
           <div className="status-choices">
@@ -488,7 +517,7 @@ function MarkEditor({
           >
             Отмена
           </button>
-          <button className="button primary" disabled={busy}>
+          <button className="button primary" disabled={busy || !dateAvailable}>
             {busy ? "Сохраняем…" : "Сохранить отметку"}
           </button>
         </div>
@@ -1143,6 +1172,26 @@ export function Workspace({
                               Серия: {h.streak} · Лучшая: {h.best_streak}
                             </span>
                             <div>
+                              <button
+                                className="button secondary"
+                                aria-label={"История отметок: " + h.title}
+                                disabled={!recentPlannedDate(h, today)}
+                                title={
+                                  recentPlannedDate(h, today)
+                                    ? "Открыть отметки по датам"
+                                    : "Пока нет прошедших дней по расписанию"
+                                }
+                                onClick={() =>
+                                  open({
+                                    type: "mark",
+                                    habit: h,
+                                    date: recentPlannedDate(h, today) || today,
+                                  })
+                                }
+                              >
+                                <Icon name="grid" size={17} />
+                                История
+                              </button>
                               <button
                                 className="button secondary"
                                 aria-label={"Редактировать привычку: " + h.title}

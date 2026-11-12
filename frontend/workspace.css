@@ -2147,38 +2147,43 @@
   min-width: 0;
 }
 .streak-copy > span {
-  font-size: 14px;
-  font-weight: 550;
-  color: #e0e9ff;
+  font-size: 18px;
+  font-weight: 680;
+  color: #fff;
 }
 .global-streak-value {
   display: flex;
-  gap: 12px;
+  gap: 9px;
   align-items: baseline;
   flex-wrap: wrap;
-  margin: 8px 0;
+  margin: 5px 0 2px;
 }
 .global-streak-value strong {
-  font-size: 32px;
-  line-height: 1.2;
-  letter-spacing: -0.7px;
-  font-weight: 650;
+  font-size: 40px;
+  line-height: 1.12;
+  letter-spacing: -1px;
+  font-weight: 740;
 }
 .global-streak-value > span {
-  font-size: 16px;
-  color: #eef3ff;
+  font-size: 21px;
+  font-weight: 600;
+  color: #fff;
 }
-.global-streak-value small {
-  font-size: 13px;
-  color: #d9e5ff;
-  margin-left: 6px;
+.streak-record {
+  font-size: 16px;
+  color: #e6eeff;
+  margin-bottom: 10px;
+}
+.streak-record strong {
+  color: #fff;
+  font-weight: 730;
 }
 .streak-copy p {
-  font-size: 13px;
-  color: #d8e5ff;
+  font-size: 16px;
+  color: #edf3ff;
   margin: 0;
-  max-width: 470px;
-  line-height: 1.65;
+  max-width: 520px;
+  line-height: 1.45;
 }
 .streak-week {
   display: flex;
@@ -2189,7 +2194,7 @@
   display: grid;
   gap: 9px;
   text-align: center;
-  font-size: 11px;
+  font-size: 12px;
   color: #cfdefb;
 }
 .streak-week b {
@@ -2348,7 +2353,7 @@
     width: 58px;
   }
   .global-streak-value strong {
-    font-size: 30px;
+    font-size: 38px;
   }
 }
 @media (max-width: 650px) {
@@ -2398,24 +2403,24 @@
     flex-basis: calc(100% - 74px);
   }
   .streak-copy > span {
-    font-size: 13px;
+    font-size: 17px;
   }
   .global-streak-value {
     gap: 7px;
     margin: 7px 0;
   }
   .global-streak-value strong {
-    font-size: 28px;
+    font-size: 35px;
   }
   .global-streak-value > span {
-    font-size: 14px;
+    font-size: 18px;
   }
-  .global-streak-value small {
-    margin-left: 0;
-    font-size: 12px;
+  .streak-record {
+    font-size: 14px;
+    margin-bottom: 8px;
   }
   .streak-copy p {
-    font-size: 12px;
+    font-size: 15px;
   }
   .streak-week {
     margin: 6px 0 0;

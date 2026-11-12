@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { createRoot } from "react-dom/client";
 import { AuthForm } from "./ui";
 import { Workspace } from "./workspace";
+import { Landing } from "./landing";
 import { ApiError, isRecord } from "./types";
 import type { Session, ProfileData, HttpMethod } from "./types";
 const API = location.port === "5173" ? "http://localhost:8000/api" : "/api";
@@ -10,7 +11,7 @@ function App() {
     token: localStorage.token || "",
     username: localStorage.username || "",
   }));
-  const [auth, setAuth] = useState(false);
+  const [auth, setAuth] = useState<"login" | "register" | null>(null);
   async function api<T>(path: string, data?: unknown, method?: HttpMethod): Promise<T> {
     let response;
     try {
@@ -30,7 +31,7 @@ function App() {
     if (!response.ok) {
       if (response.status === 401 && session.token) {
         logout();
-        setAuth(true);
+        setAuth("login");
       }
       const e = new ApiError(
         typeof errorBody.error === "string"
@@ -63,22 +64,31 @@ function App() {
   }
   return (
     <>
-      <Workspace
-        api={api}
-        session={session}
-        onLogin={() => setAuth(true)}
-        onLogout={logout}
-        onSessionUpdate={updateSession}
-      />
+      {session.token ? (
+        <Workspace
+          api={api}
+          session={session}
+          onLogin={() => setAuth("login")}
+          onLogout={logout}
+          onSessionUpdate={updateSession}
+        />
+      ) : (
+        <Landing
+          onLogin={() => setAuth("login")}
+          onRegister={() => setAuth("register")}
+        />
+      )}
       {auth && (
         <AuthForm
+          key={auth}
           api={api}
-          onClose={() => setAuth(false)}
+          initialRegister={auth === "register"}
+          onClose={() => setAuth(null)}
           onSuccess={(data) => {
             localStorage.token = data.token;
             localStorage.username = data.username;
             setSession(data);
-            setAuth(false);
+            setAuth(null);
           }}
         />
       )}

@@ -17,6 +17,13 @@ export const shift = (s: string, n: number) => {
 export const weekday = (s: string) => (dayDate(s).getUTCDay() + 6) % 7;
 export const planned = (h: Schedule, d: string) =>
   d >= h.start_date && h.weekdays.includes(weekday(d));
+export function recentPlannedDate(habit: Schedule, today: string): string | null {
+  for (let offset = 0; offset < 7; offset++) {
+    const date = shift(today, -offset);
+    if (planned(habit, date)) return date;
+  }
+  return null;
+}
 
 export function calendarPeriod(anchor: string, range: "month" | "week") {
   const start =

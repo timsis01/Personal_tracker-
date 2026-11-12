@@ -275,12 +275,14 @@ function AuthForm({
   api,
   onSuccess,
   onClose,
+  initialRegister = false,
 }: {
   api: Api;
   onSuccess: (session: Session) => void;
   onClose: () => void;
+  initialRegister?: boolean;
 }) {
-  const [register, setRegister] = useState(false),
+  const [register, setRegister] = useState(initialRegister),
     [values, setValues] = useState({
       username: "",
       password: "",
