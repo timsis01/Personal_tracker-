@@ -137,16 +137,18 @@ function Icon({ name = "grid", size = 20, ...props }) {
 }
 function Modal({ title, subtitle, onClose, children, wide = false }) {
   const ref = useRef();
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
   useEffect(() => {
     const previous = document.activeElement;
     document.body.style.overflow = "hidden";
     ref.current?.querySelector("input,button")?.focus();
     function keys(e) {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") closeRef.current();
       if (e.key === "Tab") {
         const all = [
           ...ref.current.querySelectorAll(
-            'button:not(:disabled),input,select,[tabindex="0"]',
+            'button:not(:disabled),input:not(:disabled),select:not(:disabled),textarea:not(:disabled),[tabindex="0"]',
           ),
         ];
         const first = all[0],
@@ -188,14 +190,27 @@ function Modal({ title, subtitle, onClose, children, wide = false }) {
         >
           <Icon name="close" />
         </button>
-        <div className="modal-mark">
-          <Icon name="target" size={26} />
+        <div className="modal-scroll">
+          <div className="modal-mark">
+            <Icon name="target" size={26} />
+          </div>
+          <h2 id="modal-title">{title}</h2>
+          <p className="modal-subtitle">{subtitle}</p>
+          {children}
         </div>
-        <h2 id="modal-title">{title}</h2>
-        <p className="modal-subtitle">{subtitle}</p>
-        {children}
       </section>
     </div>
+  );
+}
+function Avatar({ size = 32 }) {
+  return (
+    <img
+      className="default-avatar"
+      src="/default-avatar.svg"
+      width={size}
+      height={size}
+      alt=""
+    />
   );
 }
 function Field({ label, name, error, hint, children, ...props }) {
@@ -382,4 +397,13 @@ function AuthForm({ api, onSuccess, onClose }) {
   );
 }
 
-export { Icon, Modal, Field, AuthForm, categories, categoryOf, passwordRules };
+export {
+  Icon,
+  Modal,
+  Field,
+  AuthForm,
+  categories,
+  categoryOf,
+  passwordRules,
+  Avatar,
+};

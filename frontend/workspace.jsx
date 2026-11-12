@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { Icon, Modal, Field, categories, categoryOf } from "./ui.jsx";
+import { Icon, Modal, Field, categories, categoryOf, Avatar } from "./ui.jsx";
 import "./workspace.css";
+import { StreakPanel } from "./streak.jsx";
 import { Profile } from "./profile.jsx";
 import {
   week,
@@ -13,6 +14,7 @@ import {
   calendarPeriod,
   calendarWeeks,
   findHabits,
+  globalStreak,
 } from "./tracking.js";
 const status = (h, d) => h.entries[d]?.status || "clear";
 const percent = (n, total) => (total ? Math.round((n / total) * 100) : 0);
@@ -518,6 +520,12 @@ export function Workspace({
     [pending, P] = useState(null),
     [filter, F] = useState("all"),
     [habitQuery, Query] = useState("");
+  const [burst, Burst] = useState(0);
+  useEffect(() => {
+    if (!burst) return;
+    const timer = setTimeout(() => Burst(0), 1100);
+    return () => clearTimeout(timer);
+  }, [burst]);
   const [wideTable, WideTable] = useState(
     () => window.matchMedia("(min-width: 1100px)").matches,
   );
@@ -562,6 +570,14 @@ export function Workspace({
     };
   }, [session.token, reload]);
   const saveHabit = (h) => {
+    const next = habits.some((x) => x.id === h.id)
+      ? habits.map((x) => (x.id === h.id ? h : x))
+      : [...habits, h];
+    if (
+      globalStreak(next, today).todayComplete &&
+      !globalStreak(habits, today).todayComplete
+    )
+      Burst((n) => n + 1);
     H((old) =>
       old.some((x) => x.id === h.id)
         ? old.map((x) => (x.id === h.id ? h : x))
@@ -579,7 +595,13 @@ export function Workspace({
         status: status(h, today) === "done" ? "clear" : "done",
         note: h.entries[today]?.note || "",
       });
-      H((old) => old.map((x) => (x.id === h.id ? result : x)));
+      const next = habits.map((x) => (x.id === h.id ? result : x));
+      if (
+        globalStreak(next, today).todayComplete &&
+        !globalStreak(habits, today).todayComplete
+      )
+        Burst((n) => n + 1);
+      H(next);
     } catch (e) {
       E(e.message);
     } finally {
@@ -590,7 +612,7 @@ export function Workspace({
     completed = scheduledToday.filter(
       (h) => status(h, today) === "done",
     ).length;
-  const best = Math.max(0, ...habits.map((h) => h.streak));
+  const streak = globalStreak(habits, today);
   const visible = scheduledToday.filter(
     (h) =>
       filter === "all" ||
@@ -738,7 +760,8 @@ export function Workspace({
                 aria-label="Открыть профиль"
                 onClick={() => T("profile")}
               >
-                {session.first_name || session.username}
+                <Avatar />
+                <span>{session.first_name || session.username}</span>
               </button>
               <button
                 className="icon-button"
@@ -819,7 +842,8 @@ export function Workspace({
               )}
               {tab === "today" && (
                 <>
-                  <section className="summary-grid">
+                  <StreakPanel streak={streak} burst={burst} />
+                  <section className="summary-grid today-summary">
                     <article>
                       <span>Выполнено сегодня</span>
                       <strong>
@@ -829,14 +853,6 @@ export function Workspace({
                       <Meter
                         value={percent(completed, scheduledToday.length)}
                       />
-                    </article>
-                    <article>
-                      <span>Текущая серия</span>
-                      <strong>
-                        {best}
-                        <small> выполнений подряд</small>
-                      </strong>
-                      <p>По расписанию привычки</p>
                     </article>
                     <article>
                       <span>Цели в работе</span>
@@ -914,7 +930,16 @@ export function Workspace({
                                 )}
                               </p>
                             </div>
-                            <span className="routine-streak">
+                            <span
+                              className="routine-streak"
+                              title="Личная серия привычки"
+                            >
+                              <img
+                                src="/favicon.svg?v=flame"
+                                alt=""
+                                width="18"
+                                height="18"
+                              />
                               {h.streak} подряд
                             </span>
                             <div className="routine-actions">

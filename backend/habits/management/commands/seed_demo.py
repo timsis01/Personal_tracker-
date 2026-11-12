@@ -55,7 +55,7 @@ class Command(BaseCommand):
                     pattern = (day.day * 7 + index * 3) % 17
                     if day == timezone.localdate() and index > 4:
                         pass  # The demo has an unfinished plan today.
-                    elif index == 0 or pattern > 3:
+                    elif day.day in [3,4,5,9,10,11] or index == 0 or pattern > 3:
                         Completion.objects.create(habit=habit,date=day,status='done',note=notes[index] if day.day%3==0 else '')
                     elif pattern > 1:
                         Completion.objects.create(habit=habit,date=day,status='missed',note='Не хватило времени после работы.' if day.day%2 else '')

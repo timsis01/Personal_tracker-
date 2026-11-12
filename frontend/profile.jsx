@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Icon, Field, passwordRules } from "./ui.jsx";
+import { Icon, Field, passwordRules, Avatar } from "./ui.jsx";
 
 export function Profile({
   api,
@@ -158,6 +158,7 @@ export function Profile({
   return (
     <>
       <section className="profile-overview">
+        <Avatar size={64} />
         <div>
           <span className="profile-eyebrow">Личный аккаунт</span>
           <h2>
