@@ -44,3 +44,31 @@ docker compose up --build -d
 Стек: React, Django, postgreSQL
 Архитектура: клиент-серверная
 
+## Фотогалерея
+
+# Главный экран
+<img width="2482" height="1406" alt="image" src="https://github.com/user-attachments/assets/846308a6-d14b-4ce8-acdd-07896e59c314" />
+
+# Окно регистрации
+<img width="2484" height="1407" alt="image" src="https://github.com/user-attachments/assets/d0a12dde-d9a1-48b9-a3cc-5d4cb817bd13" />
+
+# Окно входа
+<img width="2485" height="1403" alt="image" src="https://github.com/user-attachments/assets/225ed4cf-5283-43e8-9648-4de8ba9c9149" />
+
+# Экран с привычками на текущий день
+<img width="2460" height="1405" alt="image" src="https://github.com/user-attachments/assets/0198db37-8814-41bd-86e3-7ce2051fc824" />
+
+# Экран со списком привычек
+<img width="2452" height="1405" alt="image" src="https://github.com/user-attachments/assets/0d467ace-7008-4b53-8914-96fef9e39a74" />
+
+# Экран с календарем выполненных привычек
+<img width="2485" height="1406" alt="image" src="https://github.com/user-attachments/assets/4d9f8d06-a8b5-409e-8345-a26867b1f884" />
+
+# Цели
+<img width="2483" height="1404" alt="image" src="https://github.com/user-attachments/assets/d1817fd9-2885-413e-8fe0-76bf45cef8b7" />
+
+# Статистика
+<img width="2462" height="1411" alt="image" src="https://github.com/user-attachments/assets/bc4f85f1-1cd4-46d6-bc55-1d01e12b3ff6" />
+
+# Профиль пользователя
+<img width="2463" height="1406" alt="image" src="https://github.com/user-attachments/assets/3ebd8803-5574-47b9-bacc-303827718a61" />
