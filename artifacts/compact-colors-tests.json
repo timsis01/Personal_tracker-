@@ -1,0 +1,30 @@
+{
+  "backendTests": 23,
+  "customColorPersisted": true,
+  "tableChecks": [
+    {
+      "days": 30,
+      "page": 1100,
+      "tables": 1,
+      "width": 1100
+    },
+    {
+      "days": 30,
+      "page": 1425,
+      "tables": 1,
+      "width": 1440
+    },
+    {
+      "days": 30,
+      "page": 1625,
+      "tables": 1,
+      "width": 1640
+    },
+    {
+      "days": 30,
+      "page": 375,
+      "tables": 6,
+      "width": 390
+    }
+  ]
+}
