@@ -1,15 +1,24 @@
+import type {
+  ReactNode,
+  SVGProps,
+  InputHTMLAttributes,
+  ChangeEvent,
+  FormEvent,
+} from "react";
+import { toApiError } from "./types";
+import type { Api, Session, IconName, FieldErrors, Habit } from "./types";
 import React, { useEffect, useRef, useState } from "react";
 
 import "./style.css";
 
-const dayLabel = (n) =>
+const dayLabel = (n: number) =>
   n % 10 === 1 && n % 100 !== 11
     ? "день"
     : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14)
       ? "дня"
       : "дней";
 const API = location.port === "5173" ? "http://localhost:8000/api" : "/api";
-const categories = [
+const categories: [string, string, IconName][] = [
   ["general", "Личное", "grid"],
   ["health", "Здоровье", "heart"],
   ["learn", "Обучение", "book"],
@@ -17,7 +26,7 @@ const categories = [
   ["focus", "Работа", "target"],
   ["rest", "Отдых", "moon"],
 ];
-const legacy = {
+const legacy: Record<string, string> = {
   "🌱": "general",
   "📚": "learn",
   "💧": "health",
@@ -25,9 +34,9 @@ const legacy = {
   "🧘": "rest",
   "🎨": "general",
 };
-const categoryOf = (h) =>
+const categoryOf = (h: Pick<Habit, "icon">) =>
   categories.find((c) => c[0] === (legacy[h.icon] || h.icon)) || categories[0];
-const passwordRules = [
+const passwordRules: [string, (password: string) => boolean][] = [
   ["От 8 до 128 символов", (p) => p.length >= 8 && p.length <= 128],
   [
     "Только латиница, цифры и спецсимволы, без пробелов",
@@ -36,8 +45,12 @@ const passwordRules = [
   ["Заглавная и строчная буквы", (p) => /[A-Z]/.test(p) && /[a-z]/.test(p)],
   ["Хотя бы одна цифра", (p) => /[0-9]/.test(p)],
 ];
-function Icon({ name = "grid", size = 20, ...props }) {
-  const paths = {
+function Icon({
+  name = "grid",
+  size = 20,
+  ...props
+}: SVGProps<SVGSVGElement> & { name?: IconName; size?: number }) {
+  const paths: Record<IconName, ReactNode> = {
     user: (
       <>
         <circle cx="12" cy="8" r="4" />
@@ -90,9 +103,7 @@ function Icon({ name = "grid", size = 20, ...props }) {
         <path d="m8 12-2 9 6-3 6 3-2-9" />
       </>
     ),
-    heart: (
-      <path d="M20 5c-3-3-7-1-8 2-1-3-5-5-8-2-4 4 1 9 8 15 7-6 12-11 8-15Z" />
-    ),
+    heart: <path d="M20 5c-3-3-7-1-8 2-1-3-5-5-8-2-4 4 1 9 8 15 7-6 12-11 8-15Z" />,
     book: (
       <>
         <path d="M12 5v15M3 4c4-1 6 0 9 2 3-2 5-3 9-2v14c-4-1-6 0-9 2-3-2-5-3-9-2Z" />
@@ -135,24 +146,38 @@ function Icon({ name = "grid", size = 20, ...props }) {
     </svg>
   );
 }
-function Modal({ title, subtitle, onClose, children, wide = false }) {
-  const ref = useRef();
+function Modal({
+  title,
+  subtitle,
+  onClose,
+  children,
+  wide = false,
+}: {
+  title: string;
+  subtitle: string;
+  onClose: () => void;
+  children: ReactNode;
+  wide?: boolean;
+}) {
+  const ref = useRef<HTMLElement>(null);
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
   useEffect(() => {
     const previous = document.activeElement;
     document.body.style.overflow = "hidden";
-    ref.current?.querySelector("input,button")?.focus();
-    function keys(e) {
+    ref.current?.querySelector<HTMLElement>("input,button")?.focus();
+    function keys(e: KeyboardEvent) {
+      if (!ref.current) return;
       if (e.key === "Escape") closeRef.current();
       if (e.key === "Tab") {
         const all = [
-          ...ref.current.querySelectorAll(
+          ...ref.current.querySelectorAll<HTMLElement>(
             'button:not(:disabled),input:not(:disabled),select:not(:disabled),textarea:not(:disabled),[tabindex="0"]',
           ),
         ];
         const first = all[0],
           last = all.at(-1);
+        if (!first || !last) return;
         if (e.shiftKey && document.activeElement === first) {
           e.preventDefault();
           last.focus();
@@ -166,7 +191,7 @@ function Modal({ title, subtitle, onClose, children, wide = false }) {
     return () => {
       document.body.style.overflow = "";
       document.removeEventListener("keydown", keys);
-      previous?.focus();
+      if (previous instanceof HTMLElement) previous.focus();
     };
   }, []);
   return (
@@ -202,7 +227,7 @@ function Modal({ title, subtitle, onClose, children, wide = false }) {
     </div>
   );
 }
-function Avatar({ size = 32 }) {
+function Avatar({ size = 32 }: { size?: number }) {
   return (
     <img
       className="default-avatar"
@@ -213,7 +238,20 @@ function Avatar({ size = 32 }) {
     />
   );
 }
-function Field({ label, name, error, hint, children, ...props }) {
+function Field({
+  label,
+  name,
+  error,
+  hint,
+  children,
+  ...props
+}: InputHTMLAttributes<HTMLInputElement> & {
+  label: string;
+  name: string;
+  error?: string;
+  hint?: string;
+  children?: ReactNode;
+}) {
   return (
     <div className={"field " + (error ? "invalid" : "")}>
       <label htmlFor={name}>{label}</label>
@@ -233,48 +271,54 @@ function Field({ label, name, error, hint, children, ...props }) {
     </div>
   );
 }
-function AuthForm({ api, onSuccess, onClose }) {
-  const [register, R] = useState(false),
-    [values, V] = useState({
+function AuthForm({
+  api,
+  onSuccess,
+  onClose,
+}: {
+  api: Api;
+  onSuccess: (session: Session) => void;
+  onClose: () => void;
+}) {
+  const [register, setRegister] = useState(false),
+    [values, setValues] = useState({
       username: "",
       password: "",
       password_confirm: "",
     }),
-    [errors, E] = useState({}),
-    [busy, B] = useState(false),
-    [show, S] = useState(false);
-  const update = (e) => {
-    V({ ...values, [e.target.name]: e.target.value });
-    E({ ...errors, [e.target.name]: undefined, form: undefined });
+    [errors, setErrors] = useState<FieldErrors>({}),
+    [busy, setBusy] = useState(false),
+    [show, setShowPassword] = useState(false);
+  const update = (e: ChangeEvent<HTMLInputElement>) => {
+    setValues({ ...values, [e.target.name]: e.target.value });
+    setErrors({ ...errors, [e.target.name]: undefined, form: undefined });
   };
-  async function submit(e) {
+  async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const issues = {};
+    const issues: FieldErrors = {};
     if (register) {
       if (!/^[A-Za-z0-9_]{3,30}$/.test(values.username.trim()))
-        issues.username =
-          "От 3 до 30 символов: латиница, цифры и подчёркивание.";
+        issues.username = "От 3 до 30 символов: латиница, цифры и подчёркивание.";
       const failed = passwordRules.filter(([, test]) => !test(values.password));
-      if (failed.length)
-        issues.password = failed.map(([text]) => text).join(". ");
+      if (failed.length) issues.password = failed.map(([text]) => text).join(". ");
       if (values.password !== values.password_confirm)
         issues.password_confirm = "Пароли не совпадают.";
     } else {
-      if (!values.username.trim())
-        issues.username = "Введите имя пользователя.";
+      if (!values.username.trim()) issues.username = "Введите имя пользователя.";
       if (!values.password) issues.password = "Введите пароль.";
     }
     if (Object.keys(issues).length) {
-      E(issues);
+      setErrors(issues);
       return;
     }
-    B(true);
+    setBusy(true);
     try {
-      onSuccess(await api("/auth/", { ...values, register }));
-    } catch (e) {
-      E(e.fields || { form: e.message });
+      onSuccess(await api<Session>("/auth/", { ...values, register }));
+    } catch (cause) {
+      const e = toApiError(cause);
+      setErrors(e.fields || { form: e.message });
     } finally {
-      B(false);
+      setBusy(false);
     }
   }
   return (
@@ -291,8 +335,8 @@ function AuthForm({ api, onSuccess, onClose }) {
         <button
           className={!register ? "selected" : ""}
           onClick={() => {
-            R(false);
-            E({});
+            setRegister(false);
+            setErrors({});
           }}
         >
           Вход
@@ -300,8 +344,8 @@ function AuthForm({ api, onSuccess, onClose }) {
         <button
           className={register ? "selected" : ""}
           onClick={() => {
-            R(true);
-            E({});
+            setRegister(true);
+            setErrors({});
           }}
         >
           Регистрация
@@ -328,16 +372,14 @@ function AuthForm({ api, onSuccess, onClose }) {
           type={show ? "text" : "password"}
           autoComplete={register ? "new-password" : "current-password"}
           maxLength={128}
-          placeholder={
-            register ? "Придумайте надёжный пароль" : "Введите пароль"
-          }
+          placeholder={register ? "Придумайте надёжный пароль" : "Введите пароль"}
         >
           <button
             type="button"
             className="password-toggle"
             aria-label={show ? "Скрыть пароль" : "Показать пароль"}
             aria-pressed={show}
-            onClick={() => S(!show)}
+            onClick={() => setShowPassword(!show)}
           >
             <Icon name="eye" />
           </button>
@@ -346,14 +388,8 @@ function AuthForm({ api, onSuccess, onClose }) {
           <>
             <ul className="password-rules">
               {passwordRules.map(([text, test]) => (
-                <li
-                  key={text}
-                  className={test(values.password) ? "passed" : ""}
-                >
-                  <Icon
-                    name={test(values.password) ? "check" : "close"}
-                    size={13}
-                  />
+                <li key={text} className={test(values.password) ? "passed" : ""}>
+                  <Icon name={test(values.password) ? "check" : "close"} size={13} />
                   {text}
                 </li>
               ))}
@@ -386,8 +422,8 @@ function AuthForm({ api, onSuccess, onClose }) {
         <button
           className="text-button"
           onClick={() => {
-            R(!register);
-            E({});
+            setRegister(!register);
+            setErrors({});
           }}
         >
           {register ? "Войти" : "Создать аккаунт"}
@@ -397,13 +433,4 @@ function AuthForm({ api, onSuccess, onClose }) {
   );
 }
 
-export {
-  Icon,
-  Modal,
-  Field,
-  AuthForm,
-  categories,
-  categoryOf,
-  passwordRules,
-  Avatar,
-};
+export { Icon, Modal, Field, AuthForm, categories, categoryOf, passwordRules, Avatar };

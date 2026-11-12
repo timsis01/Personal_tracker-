@@ -1,0 +1,6 @@
+**/node_modules
+**/dist
+backend
+artifacts
+*.sqlite3
+frontend/public/fonts

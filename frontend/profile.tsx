@@ -1,5 +1,8 @@
+import type { ChangeEvent, FormEvent } from "react";
+import { toApiError } from "./types";
+import type { Api, Session, ProfileData, SessionUpdate, FieldErrors } from "./types";
 import React, { useEffect, useState } from "react";
-import { Icon, Field, passwordRules, Avatar } from "./ui.jsx";
+import { Icon, Field, passwordRules, Avatar } from "./ui";
 
 export function Profile({
   api,
@@ -8,125 +11,131 @@ export function Profile({
   onLogin,
   habitCount,
   goalCount,
+}: {
+  api: Api;
+  session: Session;
+  onSessionUpdate: SessionUpdate;
+  onLogin: () => void;
+  habitCount: number;
+  goalCount: number;
 }) {
-  const [profile, P] = useState(null),
-    [values, V] = useState({
+  const [profile, setProfile] = useState<ProfileData | null>(null),
+    [values, setValues] = useState({
       username: session.username,
       first_name: "",
       email: "",
     }),
-    [errors, E] = useState({}),
-    [loading, L] = useState(false),
-    [saving, S] = useState(false),
-    [saved, Success] = useState(""),
-    [loadError, LE] = useState(""),
-    [retry, R] = useState(0);
-  const [passwords, Passwords] = useState({
+    [errors, setErrors] = useState<FieldErrors>({}),
+    [loading, setLoading] = useState(false),
+    [saving, setSaving] = useState(false),
+    [saved, setSaveMessage] = useState(""),
+    [loadError, setLoadError] = useState(""),
+    [retry, setRetry] = useState(0);
+  const [passwords, setPasswords] = useState({
       current_password: "",
       password: "",
       password_confirm: "",
     }),
-    [passwordErrors, PE] = useState({}),
-    [changing, C] = useState(false),
-    [changed, Changed] = useState(""),
-    [show, Show] = useState(false);
+    [passwordErrors, setPasswordErrors] = useState<FieldErrors>({}),
+    [changing, setChangingPassword] = useState(false),
+    [changed, setPasswordMessage] = useState(""),
+    [show, setShowPasswords] = useState(false);
   useEffect(() => {
     let active = true;
     if (!session.token) return;
-    L(true);
-    LE("");
-    api("/profile/")
+    setLoading(true);
+    setLoadError("");
+    api<ProfileData>("/profile/")
       .then((data) => {
         if (active) {
-          P(data);
-          V({
+          setProfile(data);
+          setValues({
             username: data.username,
             first_name: data.first_name,
             email: data.email,
           });
         }
       })
-      .catch((e) => {
-        if (active) LE(e.message);
+      .catch((cause: unknown) => {
+        const e = toApiError(cause);
+        if (active) setLoadError(e.message);
       })
       .finally(() => {
-        if (active) L(false);
+        if (active) setLoading(false);
       });
     return () => {
       active = false;
     };
   }, [session.token, retry]);
-  const update = (e) => {
-    V({ ...values, [e.target.name]: e.target.value });
-    E({ ...errors, [e.target.name]: undefined });
-    Success("");
+  const update = (e: ChangeEvent<HTMLInputElement>) => {
+    setValues({ ...values, [e.target.name]: e.target.value });
+    setErrors({ ...errors, [e.target.name]: undefined });
+    setSaveMessage("");
   };
-  async function save(e) {
+  async function save(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const issues = {};
+    const issues: FieldErrors = {};
     if (!/^[A-Za-z0-9_]{3,30}$/.test(values.username.trim()))
       issues.username = "От 3 до 30 символов: латиница, цифры и подчёркивание.";
     if (values.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email.trim()))
       issues.email = "Введите корректный адрес почты.";
     if (Object.keys(issues).length) {
-      E(issues);
+      setErrors(issues);
       return;
     }
-    S(true);
-    E({});
-    Success("");
+    setSaving(true);
+    setErrors({});
+    setSaveMessage("");
     try {
-      const data = await api("/profile/", values, "PATCH");
-      P(data);
-      V({
+      const data = await api<ProfileData>("/profile/", values, "PATCH");
+      setProfile(data);
+      setValues({
         username: data.username,
         first_name: data.first_name,
         email: data.email,
       });
       onSessionUpdate(data);
-      Success("Профиль сохранён.");
-    } catch (e) {
-      E(e.fields || { form: e.message });
+      setSaveMessage("Профиль сохранён.");
+    } catch (cause) {
+      const e = toApiError(cause);
+      setErrors(e.fields || { form: e.message });
     } finally {
-      S(false);
+      setSaving(false);
     }
   }
-  const updatePassword = (e) => {
-    Passwords({ ...passwords, [e.target.name]: e.target.value });
-    PE({ ...passwordErrors, [e.target.name]: undefined });
-    Changed("");
+  const updatePassword = (e: ChangeEvent<HTMLInputElement>) => {
+    setPasswords({ ...passwords, [e.target.name]: e.target.value });
+    setPasswordErrors({ ...passwordErrors, [e.target.name]: undefined });
+    setPasswordMessage("");
   };
-  async function change(e) {
+  async function change(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const issues = {};
-    if (!passwords.current_password)
-      issues.current_password = "Введите текущий пароль.";
-    const failed = passwordRules.filter(
-      ([, test]) => !test(passwords.password),
-    );
-    if (failed.length)
-      issues.password = failed.map(([text]) => text).join(". ");
+    const issues: FieldErrors = {};
+    if (!passwords.current_password) issues.current_password = "Введите текущий пароль.";
+    const failed = passwordRules.filter(([, test]) => !test(passwords.password));
+    if (failed.length) issues.password = failed.map(([text]) => text).join(". ");
     if (passwords.password === passwords.current_password)
       issues.password = "Новый пароль должен отличаться от текущего.";
     if (passwords.password !== passwords.password_confirm)
       issues.password_confirm = "Пароли не совпадают.";
     if (Object.keys(issues).length) {
-      PE(issues);
+      setPasswordErrors(issues);
       return;
     }
-    C(true);
-    PE({});
-    Changed("");
+    setChangingPassword(true);
+    setPasswordErrors({});
+    setPasswordMessage("");
     try {
-      const data = await api("/profile/password/", passwords);
+      const data = await api<ProfileData & Session>("/profile/password/", passwords);
       onSessionUpdate(data);
-      Passwords({ current_password: "", password: "", password_confirm: "" });
-      Show(false);
-      Changed("Пароль изменён. Другие сеансы завершены.");
-    } catch (e) {
-      PE(e.fields || { form: e.message });
+      setPasswords({ current_password: "", password: "", password_confirm: "" });
+      setShowPasswords(false);
+      setPasswordMessage("Пароль изменён. Другие сеансы завершены.");
+    } catch (cause) {
+      const e = toApiError(cause);
+      setPasswordErrors(e.fields || { form: e.message });
     } finally {
-      C(false);
+      setChangingPassword(false);
     }
   }
   if (!session.token)
@@ -150,7 +159,7 @@ export function Profile({
     return (
       <div className="error-banner" role="alert">
         {loadError}
-        <button className="text-button" onClick={() => R((n) => n + 1)}>
+        <button className="text-button" onClick={() => setRetry((n) => n + 1)}>
           Повторить
         </button>
       </div>
@@ -161,22 +170,17 @@ export function Profile({
         <Avatar size={64} />
         <div>
           <span className="profile-eyebrow">Личный аккаунт</span>
-          <h2>
-            {profile?.first_name || profile?.username || session.username}
-          </h2>
+          <h2>{profile?.first_name || profile?.username || session.username}</h2>
           <p>
             @{profile?.username || session.username}
             {profile?.joined &&
               " · С нами с " +
-                new Date(profile.joined + "T12:00:00Z").toLocaleDateString(
-                  "ru-RU",
-                  {
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric",
-                    timeZone: "UTC",
-                  },
-                )}
+                new Date(profile.joined + "T12:00:00Z").toLocaleDateString("ru-RU", {
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                  timeZone: "UTC",
+                })}
           </p>
         </div>
         <div className="profile-counts">
@@ -244,21 +248,18 @@ export function Profile({
                 type="button"
                 disabled={saving || changing}
                 onClick={() => {
-                  V({
-                    username: profile.username,
-                    first_name: profile.first_name,
-                    email: profile.email,
+                  setValues({
+                    username: profile!.username,
+                    first_name: profile!.first_name,
+                    email: profile!.email,
                   });
-                  E({});
-                  Success("");
+                  setErrors({});
+                  setSaveMessage("");
                 }}
               >
                 Отменить изменения
               </button>
-              <button
-                className="button primary"
-                disabled={saving || changing || loading}
-              >
+              <button className="button primary" disabled={saving || changing || loading}>
                 {saving ? "Сохраняем…" : "Сохранить профиль"}
               </button>
             </div>
@@ -292,14 +293,8 @@ export function Profile({
             />
             <ul className="password-rules">
               {passwordRules.map(([text, test]) => (
-                <li
-                  key={text}
-                  className={test(passwords.password) ? "passed" : ""}
-                >
-                  <Icon
-                    name={test(passwords.password) ? "check" : "close"}
-                    size={13}
-                  />
+                <li key={text} className={test(passwords.password) ? "passed" : ""}>
+                  <Icon name={test(passwords.password) ? "check" : "close"} size={13} />
                   {text}
                 </li>
               ))}
@@ -318,7 +313,7 @@ export function Profile({
               <input
                 type="checkbox"
                 checked={show}
-                onChange={(e) => Show(e.target.checked)}
+                onChange={(e) => setShowPasswords(e.target.checked)}
               />
               Показать пароли
             </label>
@@ -335,10 +330,7 @@ export function Profile({
                 {changed}
               </div>
             )}
-            <button
-              className="button primary"
-              disabled={changing || saving || loading}
-            >
+            <button className="button primary" disabled={changing || saving || loading}>
               {changing ? "Меняем пароль…" : "Изменить пароль"}
             </button>
           </form>

@@ -1,8 +1,23 @@
+import type { FormEvent } from "react";
+import { toApiError } from "./types";
+import type {
+  Api,
+  Session,
+  SessionUpdate,
+  Habit,
+  Goal,
+  GoalDraft,
+  FieldErrors,
+  Tab,
+  ModalState,
+  IconName,
+  VariableStyle,
+} from "./types";
 import React, { useEffect, useState } from "react";
-import { Icon, Modal, Field, categories, categoryOf, Avatar } from "./ui.jsx";
+import { Icon, Modal, Field, categories, categoryOf, Avatar } from "./ui";
 import "./workspace.css";
-import { StreakPanel } from "./streak.jsx";
-import { Profile } from "./profile.jsx";
+import { StreakPanel } from "./streak";
+import { Profile } from "./profile";
 import {
   week,
   todayKey,
@@ -15,30 +30,30 @@ import {
   calendarWeeks,
   findHabits,
   globalStreak,
-} from "./tracking.js";
-const status = (h, d) => h.entries[d]?.status || "clear";
-const percent = (n, total) => (total ? Math.round((n / total) * 100) : 0);
-const formatDay = (s) =>
+} from "./tracking";
+const status = (h: Habit, d: string) => h.entries[d]?.status || "clear";
+const percent = (n: number, total: number) => (total ? Math.round((n / total) * 100) : 0);
+const formatDay = (s: string) =>
   dayDate(s).toLocaleDateString("ru-RU", {
     day: "numeric",
     month: "long",
     timeZone: "UTC",
   });
-function ratio(habits, d) {
+function ratio(habits: Habit[], d: string) {
   const all = habits.filter((h) => planned(h, d));
   return {
     total: all.length,
     done: all.filter((h) => status(h, d) === "done").length,
   };
 }
-function Meter({ value }) {
+function Meter({ value }: { value: number }) {
   return (
     <div className="meter">
       <span style={{ width: Math.max(0, Math.min(100, value)) + "%" }} />
     </div>
   );
 }
-function FormError({ error }) {
+function FormError({ error }: { error?: string }) {
   return error ? (
     <div className="error-banner" role="alert">
       {error}
@@ -64,31 +79,45 @@ const habitColors = [
   "#6c975d",
   "#aa6da3",
 ];
-function HabitEditor({ habit, habits, goals, api, onSave, onClose }) {
-  const [title, T] = useState(habit?.title || ""),
-    [color, Color] = useState(
+function HabitEditor({
+  habit,
+  habits,
+  goals,
+  api,
+  onSave,
+  onClose,
+}: {
+  habit?: Habit;
+  habits: Habit[];
+  goals: Goal[];
+  api: Api;
+  onSave: (habit: Habit) => void;
+  onClose: () => void;
+}) {
+  const [title, setTitle] = useState(habit?.title || ""),
+    [color, setColor] = useState(
       habit?.color ||
         habitColors.find((c) => !habits.some((h) => h.color === c)) ||
         habitColors[0],
     ),
-    [icon, I] = useState(habit ? categoryOf(habit)[0] : "general"),
-    [days, D] = useState(habit?.weekdays || [0, 1, 2, 3, 4, 5, 6]),
-    [goal, G] = useState(habit?.goal || ""),
-    [errors, E] = useState({}),
-    [busy, B] = useState(false);
-  async function submit(e) {
+    [icon, setCategory] = useState(habit ? categoryOf(habit)[0] : "general"),
+    [days, setWeekdays] = useState(habit?.weekdays || [0, 1, 2, 3, 4, 5, 6]),
+    [goal, setGoalId] = useState(habit?.goal || ""),
+    [errors, setErrors] = useState<FieldErrors>({}),
+    [busy, setBusy] = useState(false);
+  async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const err = {};
+    const err: FieldErrors = {};
     if (title.trim().length < 3) err.title = "Введите от 3 до 120 символов.";
     if (!days.length) err.weekdays = "Выберите хотя бы один день.";
     if (Object.keys(err).length) {
-      E(err);
+      setErrors(err);
       return;
     }
-    B(true);
+    setBusy(true);
     try {
       onSave(
-        await api(
+        await api<Habit>(
           "/habits/" + (habit ? habit.id + "/" : ""),
           {
             title,
@@ -100,9 +129,10 @@ function HabitEditor({ habit, habits, goals, api, onSave, onClose }) {
           habit ? "PATCH" : "POST",
         ),
       );
-    } catch (e) {
-      E(e.fields || { form: e.message });
-      B(false);
+    } catch (cause) {
+      const e = toApiError(cause);
+      setErrors(e.fields || { form: e.message });
+      setBusy(false);
     }
   }
   return (
@@ -117,7 +147,7 @@ function HabitEditor({ habit, habits, goals, api, onSave, onClose }) {
           label="Название"
           name="habit-title"
           value={title}
-          onChange={(e) => T(e.target.value)}
+          onChange={(e) => setTitle(e.target.value)}
           maxLength={120}
           placeholder="Читать 20 минут"
           error={errors.title}
@@ -133,7 +163,7 @@ function HabitEditor({ habit, habits, goals, api, onSave, onClose }) {
                 aria-label={"Цвет " + c}
                 aria-pressed={color === c}
                 className={color === c ? "chosen" : ""}
-                onClick={() => Color(c)}
+                onClick={() => setColor(c)}
               >
                 {color === c && <Icon name="check" size={16} />}
               </button>
@@ -144,8 +174,8 @@ function HabitEditor({ habit, habits, goals, api, onSave, onClose }) {
                 aria-label="Свой цвет"
                 type="color"
                 value={color}
-                onInput={(e) => Color(e.target.value)}
-                onChange={(e) => Color(e.target.value)}
+                onInput={(e) => setColor(e.currentTarget.value)}
+                onChange={(e) => setColor(e.target.value)}
               />
             </label>
           </div>
@@ -154,7 +184,7 @@ function HabitEditor({ habit, habits, goals, api, onSave, onClose }) {
             <input
               id="habit-color-hex"
               value={color}
-              onChange={(e) => Color(e.target.value)}
+              onChange={(e) => setColor(e.target.value)}
               maxLength={7}
               placeholder="#5274cc"
             />
@@ -173,7 +203,7 @@ function HabitEditor({ habit, habits, goals, api, onSave, onClose }) {
                   type="radio"
                   name="category"
                   checked={id === icon}
-                  onChange={() => I(id)}
+                  onChange={() => setCategory(id)}
                 />
                 <Icon name={iconName} />
                 {label}
@@ -191,10 +221,8 @@ function HabitEditor({ habit, habits, goals, api, onSave, onClose }) {
                 aria-pressed={days.includes(i)}
                 className={days.includes(i) ? "picked" : ""}
                 onClick={() =>
-                  D(
-                    days.includes(i)
-                      ? days.filter((d) => d !== i)
-                      : [...days, i].sort(),
+                  setWeekdays(
+                    days.includes(i) ? days.filter((d) => d !== i) : [...days, i].sort(),
                   )
                 }
               >
@@ -205,7 +233,7 @@ function HabitEditor({ habit, habits, goals, api, onSave, onClose }) {
           <button
             type="button"
             className="text-button all-days"
-            onClick={() => D([0, 1, 2, 3, 4, 5, 6])}
+            onClick={() => setWeekdays([0, 1, 2, 3, 4, 5, 6])}
           >
             Каждый день
           </button>
@@ -213,11 +241,7 @@ function HabitEditor({ habit, habits, goals, api, onSave, onClose }) {
         </fieldset>
         <div className="field">
           <label htmlFor="goal-link">Связать с целью</label>
-          <select
-            id="goal-link"
-            value={goal}
-            onChange={(e) => G(e.target.value)}
-          >
+          <select id="goal-link" value={goal} onChange={(e) => setGoalId(e.target.value)}>
             <option value="">Без цели</option>
             {goals.map((g) => (
               <option key={g.id} value={g.id}>
@@ -229,8 +253,8 @@ function HabitEditor({ habit, habits, goals, api, onSave, onClose }) {
         </div>
         {habit && (
           <p className="form-help">
-            Изменение расписания применяется ко всему календарю. Сохранённые
-            отметки останутся в истории.
+            Изменение расписания применяется ко всему календарю. Сохранённые отметки
+            останутся в истории.
           </p>
         )}
         <FormError error={errors.form} />
@@ -251,16 +275,27 @@ function HabitEditor({ habit, habits, goals, api, onSave, onClose }) {
     </Modal>
   );
 }
-function GoalEditor({ goal, api, onSave, onClose }) {
-  const [values, V] = useState(
+function GoalEditor({
+  goal,
+  api,
+  onSave,
+  onClose,
+}: {
+  goal?: Goal;
+  api: Api;
+  onSave: (goal: Goal) => void;
+  onClose: () => void;
+}) {
+  const [values, setValues] = useState<GoalDraft>(
       goal || { title: "", unit: "раз", target: 10, current: 0, deadline: "" },
     ),
-    [errors, E] = useState({}),
-    [busy, B] = useState(false);
-  const update = (e) => V({ ...values, [e.target.name]: e.target.value });
-  async function submit(e) {
+    [errors, setErrors] = useState<FieldErrors>({}),
+    [busy, setBusy] = useState(false);
+  const update = (e: React.ChangeEvent<HTMLInputElement>) =>
+    setValues({ ...values, [e.target.name]: e.target.value });
+  async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const err = {};
+    const err: FieldErrors = {};
     if (!values.title.trim()) err.title = "Введите название.";
     if (!values.unit.trim()) err.unit = "Укажите единицу измерения.";
     if (!Number.isFinite(Number(values.target)) || Number(values.target) <= 0)
@@ -272,21 +307,22 @@ function GoalEditor({ goal, api, onSave, onClose }) {
     )
       err.current = "Введите число не меньше нуля.";
     if (Object.keys(err).length) {
-      E(err);
+      setErrors(err);
       return;
     }
-    B(true);
+    setBusy(true);
     try {
       onSave(
-        await api(
+        await api<Goal>(
           "/goals/" + (goal ? goal.id + "/" : ""),
           values,
           goal ? "PATCH" : "POST",
         ),
       );
-    } catch (e) {
-      E(e.fields || { form: e.message });
-      B(false);
+    } catch (cause) {
+      const e = toApiError(cause);
+      setErrors(e.fields || { form: e.message });
+      setBusy(false);
     }
   }
   return (
@@ -362,25 +398,38 @@ function GoalEditor({ goal, api, onSave, onClose }) {
     </Modal>
   );
 }
-function MarkEditor({ habit, date, api, onSave, onClose }) {
-  const [state, S] = useState(status(habit, date)),
-    [note, N] = useState(habit.entries[date]?.note || ""),
-    [error, E] = useState(""),
-    [busy, B] = useState(false);
-  async function submit(e) {
+function MarkEditor({
+  habit,
+  date,
+  api,
+  onSave,
+  onClose,
+}: {
+  habit: Habit;
+  date: string;
+  api: Api;
+  onSave: (habit: Habit) => void;
+  onClose: () => void;
+}) {
+  const [state, setStatus] = useState(status(habit, date)),
+    [note, setNote] = useState(habit.entries[date]?.note || ""),
+    [error, setError] = useState(""),
+    [busy, setBusy] = useState(false);
+  async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    B(true);
+    setBusy(true);
     try {
       onSave(
-        await api("/habits/" + habit.id + "/complete/", {
+        await api<Habit>("/habits/" + habit.id + "/complete/", {
           date,
           status: state,
           note,
         }),
       );
-    } catch (e) {
-      E(e.message);
-      B(false);
+    } catch (cause) {
+      const e = toApiError(cause);
+      setError(e.message);
+      setBusy(false);
     }
   }
   return (
@@ -393,17 +442,19 @@ function MarkEditor({ habit, date, api, onSave, onClose }) {
         <fieldset>
           <legend>Результат дня</legend>
           <div className="status-choices">
-            {[
-              ["done", "Выполнено"],
-              ["missed", "Не выполнено"],
-              ["clear", "Без отметки"],
-            ].map(([id, label]) => (
+            {(
+              [
+                ["done", "Выполнено"],
+                ["missed", "Не выполнено"],
+                ["clear", "Без отметки"],
+              ] as const
+            ).map(([id, label]) => (
               <label key={id} className={state === id ? "chosen " + id : ""}>
                 <input
                   type="radio"
                   name="status"
                   checked={state === id}
-                  onChange={() => S(id)}
+                  onChange={() => setStatus(id)}
                 />
                 {label}
               </label>
@@ -416,7 +467,7 @@ function MarkEditor({ habit, date, api, onSave, onClose }) {
             <textarea
               id="day-note"
               value={note}
-              onChange={(e) => N(e.target.value)}
+              onChange={(e) => setNote(e.target.value)}
               maxLength={500}
               rows={3}
               placeholder="Как прошло?"
@@ -425,9 +476,7 @@ function MarkEditor({ habit, date, api, onSave, onClose }) {
           </div>
         )}
         {state === "clear" && (
-          <p className="form-help">
-            Отметка и заметка за этот день будут убраны.
-          </p>
+          <p className="form-help">Отметка и заметка за этот день будут убраны.</p>
         )}
         <FormError error={error} />
         <div className="form-actions">
@@ -447,11 +496,23 @@ function MarkEditor({ habit, date, api, onSave, onClose }) {
     </Modal>
   );
 }
-function DeleteConfirm({ item, kind, api, onDeleted, onClose }) {
-  const [busy, B] = useState(false),
-    [error, E] = useState("");
-  async function remove() {
-    B(true);
+function DeleteConfirm({
+  item,
+  kind,
+  api,
+  onDeleted,
+  onClose,
+}: {
+  item: Habit | Goal;
+  kind: "goal" | "habit";
+  api: Api;
+  onDeleted: () => void;
+  onClose: () => void;
+}) {
+  const [busy, setBusy] = useState(false),
+    [error, setError] = useState("");
+  async function remove(): Promise<void> {
+    setBusy(true);
     try {
       await api(
         "/" + (kind === "goal" ? "goals" : "habits") + "/" + item.id + "/",
@@ -459,9 +520,10 @@ function DeleteConfirm({ item, kind, api, onDeleted, onClose }) {
         "DELETE",
       );
       onDeleted();
-    } catch (e) {
-      E(e.message);
-      B(false);
+    } catch (cause) {
+      const e = toApiError(cause);
+      setError(e.message);
+      setBusy(false);
     }
   }
   return (
@@ -487,7 +549,17 @@ function DeleteConfirm({ item, kind, api, onDeleted, onClose }) {
     </Modal>
   );
 }
-function Empty({ title, description, action, onAction }) {
+function Empty({
+  title,
+  description,
+  action,
+  onAction,
+}: {
+  title: string;
+  description: string;
+  action?: string | null;
+  onAction?: () => void;
+}) {
   return (
     <div className="empty-panel">
       <Icon name="grid" size={30} />
@@ -509,67 +581,74 @@ export function Workspace({
   onLogin,
   onLogout,
   onSessionUpdate,
+}: {
+  api: Api;
+  session: Session;
+  onLogin: () => void;
+  onLogout: () => void;
+  onSessionUpdate: SessionUpdate;
 }) {
-  const [tab, T] = useState("today"),
-    [habits, H] = useState([]),
-    [goals, G] = useState([]),
-    [loading, L] = useState(false),
-    [error, E] = useState(""),
-    [reload, R] = useState(0),
-    [modal, M] = useState(null),
-    [pending, P] = useState(null),
-    [filter, F] = useState("all"),
-    [habitQuery, Query] = useState("");
-  const [burst, Burst] = useState(0);
+  const [tab, setTab] = useState<Tab>("today"),
+    [habits, setHabits] = useState<Habit[]>([]),
+    [goals, setGoals] = useState<Goal[]>([]),
+    [loading, setLoading] = useState(false),
+    [error, setError] = useState(""),
+    [reload, setReloadKey] = useState(0),
+    [modal, setModal] = useState<ModalState | null>(null),
+    [pending, setPendingId] = useState<number | null>(null),
+    [filter, setFilter] = useState("all"),
+    [habitQuery, setHabitQuery] = useState("");
+  const [burst, setCelebration] = useState(0);
   useEffect(() => {
     if (!burst) return;
-    const timer = setTimeout(() => Burst(0), 1100);
+    const timer = setTimeout(() => setCelebration(0), 1100);
     return () => clearTimeout(timer);
   }, [burst]);
-  const [wideTable, WideTable] = useState(
+  const [wideTable, setWideTable] = useState(
     () => window.matchMedia("(min-width: 1100px)").matches,
   );
   useEffect(() => {
     const media = window.matchMedia("(min-width: 1100px)");
-    const changed = () => WideTable(media.matches);
+    const changed = () => setWideTable(media.matches);
     media.addEventListener("change", changed);
     return () => media.removeEventListener("change", changed);
   }, []);
   const today = todayKey(),
-    [anchor, A] = useState(today),
-    [range, Range] = useState("month"),
-    [view, View] = useState(() =>
+    [anchor, setAnchor] = useState(today),
+    [range, setRange] = useState<"month" | "week">("month"),
+    [view, setView] = useState(() =>
       window.matchMedia("(min-width: 1100px)").matches ? "table" : "calendar",
     ),
-    [selected, Selected] = useState(today);
+    [selected, setSelected] = useState(today);
   useEffect(() => {
     let active = true;
     if (!session.token) {
-      H([]);
-      G([]);
-      L(false);
+      setHabits([]);
+      setGoals([]);
+      setLoading(false);
       return;
     }
-    L(true);
-    E("");
-    Promise.all([api("/habits/"), api("/goals/")])
+    setLoading(true);
+    setError("");
+    Promise.all([api<Habit[]>("/habits/"), api<Goal[]>("/goals/")])
       .then(([h, g]) => {
         if (active) {
-          H(h);
-          G(g);
+          setHabits(h);
+          setGoals(g);
         }
       })
-      .catch((e) => {
-        if (active) E(e.message);
+      .catch((cause: unknown) => {
+        const e = toApiError(cause);
+        if (active) setError(e.message);
       })
       .finally(() => {
-        if (active) L(false);
+        if (active) setLoading(false);
       });
     return () => {
       active = false;
     };
   }, [session.token, reload]);
-  const saveHabit = (h) => {
+  const saveHabit = (h: Habit) => {
     const next = habits.some((x) => x.id === h.id)
       ? habits.map((x) => (x.id === h.id ? h : x))
       : [...habits, h];
@@ -577,20 +656,20 @@ export function Workspace({
       globalStreak(next, today).todayComplete &&
       !globalStreak(habits, today).todayComplete
     )
-      Burst((n) => n + 1);
-    H((old) =>
+      setCelebration((n) => n + 1);
+    setHabits((old) =>
       old.some((x) => x.id === h.id)
         ? old.map((x) => (x.id === h.id ? h : x))
         : [...old, h],
     );
-    M(null);
+    setModal(null);
   };
-  const open = (data) => (session.token ? M(data) : onLogin());
-  async function quick(h) {
-    P(h.id);
-    E("");
+  const open = (data: ModalState) => (session.token ? setModal(data) : onLogin());
+  async function quick(h: Habit) {
+    setPendingId(h.id);
+    setError("");
     try {
-      const result = await api("/habits/" + h.id + "/complete/", {
+      const result = await api<Habit>("/habits/" + h.id + "/complete/", {
         date: today,
         status: status(h, today) === "done" ? "clear" : "done",
         note: h.entries[today]?.note || "",
@@ -600,42 +679,35 @@ export function Workspace({
         globalStreak(next, today).todayComplete &&
         !globalStreak(habits, today).todayComplete
       )
-        Burst((n) => n + 1);
-      H(next);
-    } catch (e) {
-      E(e.message);
+        setCelebration((n) => n + 1);
+      setHabits(next);
+    } catch (cause) {
+      const e = toApiError(cause);
+      setError(e.message);
     } finally {
-      P(null);
+      setPendingId(null);
     }
   }
   const scheduledToday = habits.filter((h) => planned(h, today)),
-    completed = scheduledToday.filter(
-      (h) => status(h, today) === "done",
-    ).length;
+    completed = scheduledToday.filter((h) => status(h, today) === "done").length;
   const streak = globalStreak(habits, today);
   const visible = scheduledToday.filter(
     (h) =>
       filter === "all" ||
-      (filter === "done"
-        ? status(h, today) === "done"
-        : status(h, today) !== "done"),
+      (filter === "done" ? status(h, today) === "done" : status(h, today) !== "done"),
   );
-  const {
-    start: periodStart,
-    end: periodEnd,
-    days,
-  } = calendarPeriod(anchor, range);
+  const { start: periodStart, end: periodEnd, days } = calendarPeriod(anchor, range);
   const groups = calendarWeeks(days);
-  function navigate(n) {
-    if (range === "week") A(shift(anchor, n * 7));
+  function navigate(n: number) {
+    if (range === "week") setAnchor(shift(anchor, n * 7));
     else {
       const d = dayDate(anchor);
       d.setUTCDate(1);
       d.setUTCMonth(d.getUTCMonth() + n);
-      A(key(d));
+      setAnchor(key(d));
     }
   }
-  const cell = (h, d) => {
+  const cell = (h: Habit, d: string) => {
     const available = planned(h, d) && d <= today;
     const value = status(h, d);
     return (
@@ -680,7 +752,7 @@ export function Workspace({
     );
   };
   const lastDays = Array.from({ length: 14 }, (_, i) => shift(today, i - 14));
-  const summary = (dates) => {
+  const summary = (dates: string[]) => {
     let total = 0,
       done = 0;
     dates.forEach((d) => {
@@ -713,9 +785,7 @@ export function Workspace({
     <div
       className={
         "tracker " +
-        (tab === "calendar" && view === "table" && wideTable
-          ? "compact-calendar"
-          : "")
+        (tab === "calendar" && view === "table" && wideTable ? "compact-calendar" : "")
       }
     >
       <aside className="tracker-sidebar">
@@ -724,27 +794,29 @@ export function Workspace({
           className="tracker-brand"
           onClick={(e) => {
             e.preventDefault();
-            T("today");
+            setTab("today");
           }}
         >
           <img src="/favicon.svg?v=flame" width="38" height="38" alt="" />
           ритм<span>.</span>
         </a>
         <nav aria-label="Разделы">
-          {[
-            ["today", "check", "Сегодня"],
-            ["habits", "activity", "Привычки"],
-            ["calendar", "grid", "Календарь"],
-            ["goals", "target", "Цели"],
-            ["stats", "chart", "Статистика"],
-            ["profile", "user", "Профиль"],
-          ].map(([id, icon, label]) => (
+          {(
+            [
+              ["today", "check", "Сегодня"],
+              ["habits", "activity", "Привычки"],
+              ["calendar", "grid", "Календарь"],
+              ["goals", "target", "Цели"],
+              ["stats", "chart", "Статистика"],
+              ["profile", "user", "Профиль"],
+            ] as [Tab, IconName, string][]
+          ).map(([id, icon, label]) => (
             <button
               key={id}
               aria-label={label}
               title={label}
               className={tab === id ? "active" : ""}
-              onClick={() => T(id)}
+              onClick={() => setTab(id)}
             >
               <Icon name={icon} />
               <span className="nav-label">{label}</span>
@@ -758,7 +830,7 @@ export function Workspace({
               <button
                 className="account-profile-link"
                 aria-label="Открыть профиль"
-                onClick={() => T("profile")}
+                onClick={() => setTab("profile")}
               >
                 <Avatar />
                 <span>{session.first_name || session.username}</span>
@@ -806,9 +878,7 @@ export function Workspace({
             {tab !== "profile" && (
               <button
                 className="button primary"
-                onClick={() =>
-                  open({ type: tab === "goals" ? "goal" : "habit" })
-                }
+                onClick={() => open({ type: tab === "goals" ? "goal" : "habit" })}
               >
                 <Icon name="plus" size={18} />
                 {tab === "goals" ? "Новая цель" : "Новая привычка"}
@@ -819,7 +889,7 @@ export function Workspace({
           {error && (
             <button
               className="button secondary"
-              onClick={() => R((n) => n + 1)}
+              onClick={() => setReloadKey((n) => n + 1)}
             >
               Повторить загрузку
             </button>
@@ -850,9 +920,7 @@ export function Workspace({
                         {completed}
                         <small> / {scheduledToday.length}</small>
                       </strong>
-                      <Meter
-                        value={percent(completed, scheduledToday.length)}
-                      />
+                      <Meter value={percent(completed, scheduledToday.length)} />
                     </article>
                     <article>
                       <span>Цели в работе</span>
@@ -860,10 +928,7 @@ export function Workspace({
                         {goals.filter((g) => g.current < g.target).length}
                         <small> из {goals.length}</small>
                       </strong>
-                      <p>
-                        {goals.filter((g) => g.current >= g.target).length}{" "}
-                        завершено
-                      </p>
+                      <p>{goals.filter((g) => g.current >= g.target).length} завершено</p>
                     </article>
                   </section>
                   <div className="list-heading">
@@ -877,7 +942,7 @@ export function Workspace({
                         <button
                           key={id}
                           className={filter === id ? "selected" : ""}
-                          onClick={() => F(id)}
+                          onClick={() => setFilter(id)}
                         >
                           {label}
                         </button>
@@ -895,14 +960,10 @@ export function Workspace({
                             key={h.id}
                           >
                             <button
-                              className={
-                                "routine-check " + (done ? "done" : "")
-                              }
+                              className={"routine-check " + (done ? "done" : "")}
                               disabled={pending !== null}
                               aria-label={
-                                (done
-                                  ? "Отменить выполнение: "
-                                  : "Выполнить: ") + h.title
+                                (done ? "Отменить выполнение: " : "Выполнить: ") + h.title
                               }
                               onClick={() => quick(h)}
                             >
@@ -955,13 +1016,9 @@ export function Workspace({
                               </button>
                               <button
                                 className="icon-button"
-                                aria-label={
-                                  "Редактировать привычку: " + h.title
-                                }
+                                aria-label={"Редактировать привычку: " + h.title}
                                 title="Редактировать"
-                                onClick={() =>
-                                  open({ type: "habit", habit: h })
-                                }
+                                onClick={() => open({ type: "habit", habit: h })}
                               >
                                 <Icon name="edit" />
                               </button>
@@ -969,9 +1026,7 @@ export function Workspace({
                                 className="icon-button delete-habit"
                                 aria-label={"Удалить привычку: " + h.title}
                                 title="Удалить"
-                                onClick={() =>
-                                  open({ type: "delete", habit: h })
-                                }
+                                onClick={() => open({ type: "delete", habit: h })}
                               >
                                 <Icon name="trash" />
                               </button>
@@ -994,11 +1049,9 @@ export function Workspace({
                           ? "Остальные привычки сохранены в разделе «Все привычки» — вместе с их расписанием."
                           : "Задайте название и дни выполнения. Привычка появится в плане и календаре."
                       }
-                      action={
-                        habits.length ? "Все привычки" : "Создать привычку"
-                      }
+                      action={habits.length ? "Все привычки" : "Создать привычку"}
                       onAction={() =>
-                        habits.length ? T("habits") : open({ type: "habit" })
+                        habits.length ? setTab("habits") : open({ type: "habit" })
                       }
                     />
                   )}
@@ -1008,8 +1061,7 @@ export function Workspace({
                 <>
                   <div className="habits-toolbar">
                     <h2>
-                      Все привычки{" "}
-                      <span className="list-count">{habits.length}</span>
+                      Все привычки <span className="list-count">{habits.length}</span>
                     </h2>
                     <div className="habit-search">
                       <label htmlFor="habit-search">Поиск по названию</label>
@@ -1017,7 +1069,7 @@ export function Workspace({
                         id="habit-search"
                         type="search"
                         value={habitQuery}
-                        onChange={(e) => Query(e.target.value)}
+                        onChange={(e) => setHabitQuery(e.target.value)}
                         placeholder="Найти привычку"
                       />
                     </div>
@@ -1043,8 +1095,7 @@ export function Workspace({
                                 {categoryOf(h)[1]}
                                 {h.goal
                                   ? " · " +
-                                    (goals.find((g) => g.id === h.goal)
-                                      ?.title || "Цель")
+                                    (goals.find((g) => g.id === h.goal)?.title || "Цель")
                                   : ""}
                               </p>
                             </div>
@@ -1069,16 +1120,12 @@ export function Workspace({
                                 <span
                                   key={i}
                                   className={
-                                    h.weekdays.includes(i)
-                                      ? "scheduled-day"
-                                      : "rest-day"
+                                    h.weekdays.includes(i) ? "scheduled-day" : "rest-day"
                                   }
                                   aria-label={
                                     label +
                                     ": " +
-                                    (h.weekdays.includes(i)
-                                      ? "по плану"
-                                      : "выходной")
+                                    (h.weekdays.includes(i) ? "по плану" : "выходной")
                                   }
                                 >
                                   {label}
@@ -1098,12 +1145,8 @@ export function Workspace({
                             <div>
                               <button
                                 className="button secondary"
-                                aria-label={
-                                  "Редактировать привычку: " + h.title
-                                }
-                                onClick={() =>
-                                  open({ type: "habit", habit: h })
-                                }
+                                aria-label={"Редактировать привычку: " + h.title}
+                                onClick={() => open({ type: "habit", habit: h })}
                               >
                                 <Icon name="edit" size={17} />
                                 Редактировать
@@ -1112,9 +1155,7 @@ export function Workspace({
                                 className="icon-button delete-habit"
                                 aria-label={"Удалить привычку: " + h.title}
                                 title="Удалить привычку"
-                                onClick={() =>
-                                  open({ type: "delete", habit: h })
-                                }
+                                onClick={() => open({ type: "delete", habit: h })}
                               >
                                 <Icon name="trash" />
                               </button>
@@ -1125,11 +1166,7 @@ export function Workspace({
                     </div>
                   ) : (
                     <Empty
-                      title={
-                        habits.length
-                          ? "Ничего не найдено"
-                          : "Пока нет привычек"
-                      }
+                      title={habits.length ? "Ничего не найдено" : "Пока нет привычек"}
                       description={
                         habits.length
                           ? "Измените поисковый запрос."
@@ -1147,13 +1184,13 @@ export function Workspace({
                     <div className="segmented">
                       <button
                         className={view === "table" ? "selected" : ""}
-                        onClick={() => View("table")}
+                        onClick={() => setView("table")}
                       >
                         Таблица
                       </button>
                       <button
                         className={view === "calendar" ? "selected" : ""}
-                        onClick={() => View("calendar")}
+                        onClick={() => setView("calendar")}
                       >
                         Календарь
                       </button>
@@ -1161,13 +1198,13 @@ export function Workspace({
                     <div className="segmented">
                       <button
                         className={range === "week" ? "selected" : ""}
-                        onClick={() => Range("week")}
+                        onClick={() => setRange("week")}
                       >
                         Неделя
                       </button>
                       <button
                         className={range === "month" ? "selected" : ""}
-                        onClick={() => Range("month")}
+                        onClick={() => setRange("month")}
                       >
                         Месяц
                       </button>
@@ -1189,15 +1226,13 @@ export function Workspace({
                               year: "numeric",
                               timeZone: "UTC",
                             })
-                          : formatDay(periodStart) +
-                            " — " +
-                            formatDay(periodEnd)}
+                          : formatDay(periodStart) + " — " + formatDay(periodEnd)}
                       </h2>
                       <button
                         className="text-button"
                         onClick={() => {
-                          A(today);
-                          Selected(today);
+                          setAnchor(today);
+                          setSelected(today);
                         }}
                       >
                         К сегодняшнему дню
@@ -1221,8 +1256,7 @@ export function Workspace({
                   ) : view === "table" ? (
                     <div
                       className={
-                        "month-tables " +
-                        (wideTable ? "single-month-matrix" : "")
+                        "month-tables " + (wideTable ? "single-month-matrix" : "")
                       }
                     >
                       {(wideTable ? [days] : groups).map((group, index) => (
@@ -1233,20 +1267,19 @@ export function Workspace({
                             "Неделя " +
                             formatDay(group[0]) +
                             " — " +
-                            formatDay(group.at(-1))
+                            formatDay(group.at(-1)!)
                           }
                         >
                           {range === "month" && !wideTable && (
                             <h3>
-                              {formatDay(group[0])} — {formatDay(group.at(-1))}
+                              {formatDay(group[0])} — {formatDay(group.at(-1)!)}
                             </h3>
                           )}
                           <table
                             className={
-                              "week-matrix " +
-                              (wideTable ? "full-month-table" : "")
+                              "week-matrix " + (wideTable ? "full-month-table" : "")
                             }
-                            style={{ "--day-count": group.length }}
+                            style={{ "--day-count": group.length } as VariableStyle}
                           >
                             <thead>
                               <tr>
@@ -1255,9 +1288,7 @@ export function Workspace({
                                   <th
                                     scope="col"
                                     key={d}
-                                    className={
-                                      d === today ? "today-heading" : ""
-                                    }
+                                    className={d === today ? "today-heading" : ""}
                                   >
                                     <span>{week[weekday(d)]}</span>
                                     {Number(d.slice(-2))}
@@ -1269,7 +1300,7 @@ export function Workspace({
                               {habits.map((h) => (
                                 <tr
                                   key={h.id}
-                                  style={{ "--habit-color": h.color }}
+                                  style={{ "--habit-color": h.color } as VariableStyle}
                                 >
                                   <th scope="row">
                                     <span>
@@ -1287,9 +1318,7 @@ export function Workspace({
                                         ", неделя " +
                                         (index + 1)
                                       }
-                                      onClick={() =>
-                                        open({ type: "habit", habit: h })
-                                      }
+                                      onClick={() => open({ type: "habit", habit: h })}
                                     >
                                       <Icon name="edit" size={17} />
                                     </button>
@@ -1297,9 +1326,7 @@ export function Workspace({
                                   {group.map((d) => (
                                     <td
                                       key={d}
-                                      className={
-                                        weekday(d) === 0 ? "week-divider" : ""
-                                      }
+                                      className={weekday(d) === 0 ? "week-divider" : ""}
                                     >
                                       {cell(h, d)}
                                     </td>
@@ -1334,12 +1361,9 @@ export function Workspace({
                             {d}
                           </div>
                         ))}
-                        {Array.from(
-                          { length: weekday(periodStart) },
-                          (_, i) => (
-                            <div key={"pad" + i} />
-                          ),
-                        )}
+                        {Array.from({ length: weekday(periodStart) }, (_, i) => (
+                          <div key={"pad" + i} />
+                        ))}
                         {days.map((d) => {
                           const r = ratio(habits, d),
                             pc = percent(r.done, r.total);
@@ -1351,16 +1375,14 @@ export function Workspace({
                                 (d === selected ? "selected" : "") +
                                 (d === today ? " today" : "")
                               }
-                              onClick={() => Selected(d)}
+                              onClick={() => setSelected(d)}
                             >
                               <span>{Number(d.slice(-2))}</span>
                               <div
                                 className="day-ring"
-                                style={{ "--progress": pc + "%" }}
+                                style={{ "--progress": pc + "%" } as VariableStyle}
                               >
-                                <span>
-                                  {d > today ? "—" : r.total ? pc + "%" : "—"}
-                                </span>
+                                <span>{d > today ? "—" : r.total ? pc + "%" : "—"}</span>
                               </div>
                               <small>
                                 {r.done}/{r.total}
@@ -1424,9 +1446,7 @@ export function Workspace({
                           <article className="goal-card" key={g.id}>
                             <div className="goal-top">
                               <span
-                                className={
-                                  "goal-badge " + (pc >= 100 ? "finished" : "")
-                                }
+                                className={"goal-badge " + (pc >= 100 ? "finished" : "")}
                               >
                                 {pc >= 100 ? "Завершена" : "В работе"}
                               </span>
@@ -1434,18 +1454,14 @@ export function Workspace({
                                 <button
                                   className="icon-button"
                                   aria-label={"Редактировать цель: " + g.title}
-                                  onClick={() =>
-                                    open({ type: "goal", goal: g })
-                                  }
+                                  onClick={() => open({ type: "goal", goal: g })}
                                 >
                                   <Icon name="edit" />
                                 </button>
                                 <button
                                   className="icon-button delete-habit"
                                   aria-label={"Удалить цель: " + g.title}
-                                  onClick={() =>
-                                    open({ type: "delete", goal: g })
-                                  }
+                                  onClick={() => open({ type: "delete", goal: g })}
                                 >
                                   <Icon name="trash" />
                                 </button>
@@ -1462,9 +1478,7 @@ export function Workspace({
                             <div className="goal-meta">
                               <strong>{pc}%</strong>
                               <span>
-                                {g.deadline
-                                  ? "До " + formatDay(g.deadline)
-                                  : "Без срока"}
+                                {g.deadline ? "До " + formatDay(g.deadline) : "Без срока"}
                               </span>
                             </div>
                             <p className="goal-linked">
@@ -1501,17 +1515,14 @@ export function Workspace({
                         <small>%</small>
                       </strong>
                       <p>
-                        {currentWeek.done} из {currentWeek.total}{" "}
-                        запланированных
+                        {currentWeek.done} из {currentWeek.total} запланированных
                       </p>
                     </article>
                     <article>
                       <span>К предыдущим 7 дням</span>
                       <strong>
                         {currentWeek.total && previousWeek.total
-                          ? (currentWeek.value - previousWeek.value > 0
-                              ? "+"
-                              : "") +
+                          ? (currentWeek.value - previousWeek.value > 0 ? "+" : "") +
                             (currentWeek.value - previousWeek.value)
                           : "—"}
                         <small> п. п.</small>
@@ -1538,9 +1549,7 @@ export function Workspace({
                             key={d}
                             title={formatDay(d) + ": " + r.done + "/" + r.total}
                           >
-                            <span>
-                              {d > today ? "—" : r.total ? pc + "%" : "—"}
-                            </span>
+                            <span>{d > today ? "—" : r.total ? pc + "%" : "—"}</span>
                             <div className="bar-track">
                               <i style={{ height: pc + "%" }} />
                             </div>
@@ -1555,9 +1564,7 @@ export function Workspace({
                     {habits.length ? (
                       habits.map((h) => {
                         const scheduled = lastDays.filter((d) => planned(h, d)),
-                          n = scheduled.filter(
-                            (d) => status(h, d) === "done",
-                          ).length;
+                          n = scheduled.filter((d) => status(h, d) === "done").length;
                         return (
                           <div key={h.id}>
                             <strong>{h.title}</strong>
@@ -1588,11 +1595,11 @@ export function Workspace({
           onSave={(h) => {
             saveHabit(h);
             if (!modal.habit) {
-              Query("");
-              T("habits");
+              setHabitQuery("");
+              setTab("habits");
             }
           }}
-          onClose={() => M(null)}
+          onClose={() => setModal(null)}
         />
       )}
       {modal?.type === "goal" && (
@@ -1600,14 +1607,14 @@ export function Workspace({
           goal={modal.goal}
           api={api}
           onSave={(g) => {
-            G((old) =>
+            setGoals((old) =>
               old.some((x) => x.id === g.id)
                 ? old.map((x) => (x.id === g.id ? g : x))
                 : [...old, g],
             );
-            M(null);
+            setModal(null);
           }}
-          onClose={() => M(null)}
+          onClose={() => setModal(null)}
         />
       )}
       {modal?.type === "mark" && (
@@ -1616,7 +1623,7 @@ export function Workspace({
           date={modal.date}
           api={api}
           onSave={saveHabit}
-          onClose={() => M(null)}
+          onClose={() => setModal(null)}
         />
       )}
       {modal?.type === "delete" && (
@@ -1624,17 +1631,15 @@ export function Workspace({
           item={modal.goal || modal.habit}
           kind={modal.goal ? "goal" : "habit"}
           api={api}
-          onClose={() => M(null)}
+          onClose={() => setModal(null)}
           onDeleted={() => {
             if (modal.goal) {
-              G((old) => old.filter((g) => g.id !== modal.goal.id));
-              H((old) =>
-                old.map((h) =>
-                  h.goal === modal.goal.id ? { ...h, goal: null } : h,
-                ),
+              setGoals((old) => old.filter((g) => g.id !== modal.goal.id));
+              setHabits((old) =>
+                old.map((h) => (h.goal === modal.goal.id ? { ...h, goal: null } : h)),
               );
-            } else H((old) => old.filter((h) => h.id !== modal.habit.id));
-            M(null);
+            } else setHabits((old) => old.filter((h) => h.id !== modal.habit.id));
+            setModal(null);
           }}
         />
       )}

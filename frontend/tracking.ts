@@ -1,3 +1,4 @@
+import type { Schedule, ProgressHabit, GlobalStreak, DayProgress } from "./types";
 export const week = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 export const todayKey = () =>
   new Intl.DateTimeFormat("en-CA", {
@@ -6,32 +7,25 @@ export const todayKey = () =>
     month: "2-digit",
     day: "2-digit",
   }).format(new Date());
-export const dayDate = (s) => new Date(s + "T12:00:00Z");
-export const key = (d) => d.toISOString().slice(0, 10);
-export const shift = (s, n) => {
+export const dayDate = (s: string) => new Date(s + "T12:00:00Z");
+export const key = (d: Date) => d.toISOString().slice(0, 10);
+export const shift = (s: string, n: number) => {
   const d = dayDate(s);
   d.setUTCDate(d.getUTCDate() + n);
   return key(d);
 };
-export const weekday = (s) => (dayDate(s).getUTCDay() + 6) % 7;
-export const planned = (h, d) =>
+export const weekday = (s: string) => (dayDate(s).getUTCDay() + 6) % 7;
+export const planned = (h: Schedule, d: string) =>
   d >= h.start_date && h.weekdays.includes(weekday(d));
 
-export function calendarPeriod(anchor, range) {
+export function calendarPeriod(anchor: string, range: "month" | "week") {
   const start =
-    range === "month"
-      ? anchor.slice(0, 7) + "-01"
-      : shift(anchor, -weekday(anchor));
+    range === "month" ? anchor.slice(0, 7) + "-01" : shift(anchor, -weekday(anchor));
   const end =
     range === "month"
       ? key(
           new Date(
-            Date.UTC(
-              Number(anchor.slice(0, 4)),
-              Number(anchor.slice(5, 7)),
-              0,
-              12,
-            ),
+            Date.UTC(Number(anchor.slice(0, 4)), Number(anchor.slice(5, 7)), 0, 12),
           ),
         )
       : shift(start, 6);
@@ -39,26 +33,24 @@ export function calendarPeriod(anchor, range) {
   for (let d = start; d <= end; d = shift(d, 1)) days.push(d);
   return { start, end, days };
 }
-export function calendarWeeks(days) {
-  const groups = [];
+export function calendarWeeks(days: string[]): string[][] {
+  const groups: string[][] = [];
   for (const day of days) {
     if (!groups.length || weekday(day) === 0) groups.push([]);
-    groups.at(-1).push(day);
+    groups.at(-1)!.push(day);
   }
   return groups;
 }
-export function findHabits(habits, query = "") {
+export function findHabits<T extends { title: string }>(habits: T[], query = ""): T[] {
   const term = query.trim().toLocaleLowerCase("ru-RU");
-  return habits.filter((h) =>
-    h.title.toLocaleLowerCase("ru-RU").includes(term),
-  );
+  return habits.filter((h) => h.title.toLocaleLowerCase("ru-RU").includes(term));
 }
 
 // A day counts only when every habit scheduled for that date is done.
 // Days without planned habits are neutral; an unfinished today keeps yesterday's series.
-export function globalStreak(habits, today) {
+export function globalStreak(habits: ProgressHabit[], today: string): GlobalStreak {
   const eligible = habits.filter((h) => h.start_date <= today);
-  const classify = (date) => {
+  const classify = (date: string): DayProgress => {
     const scheduled = eligible.filter((h) => planned(h, date));
     const completed = scheduled.filter(
       (h) => h.entries?.[date]?.status === "done",
@@ -77,9 +69,7 @@ export function globalStreak(habits, today) {
       best: 0,
       todayComplete: false,
       today: todayState,
-      recent: Array.from({ length: 7 }, (_, i) =>
-        classify(shift(today, i - 6)),
-      ),
+      recent: Array.from({ length: 7 }, (_, i) => classify(shift(today, i - 6))),
     };
   const start = eligible.map((h) => h.start_date).sort()[0];
   let best = 0,

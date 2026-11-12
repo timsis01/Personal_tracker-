@@ -1,7 +1,13 @@
 import React from "react";
-import { week, weekday } from "./tracking.js";
-export function StreakPanel({ streak, burst }) {
-  const label = (n) =>
+import { week, weekday } from "./tracking";
+export function StreakPanel({
+  streak,
+  burst,
+}: {
+  streak: import("./types").GlobalStreak;
+  burst: number;
+}) {
+  const label = (n: number) =>
     n % 10 === 1 && n % 100 !== 11
       ? "день"
       : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14)
@@ -49,11 +55,7 @@ export function StreakPanel({ streak, burst }) {
           <div
             key={d.date}
             className={
-              d.complete
-                ? "complete"
-                : d.date === streak.today.date
-                  ? "current"
-                  : ""
+              d.complete ? "complete" : d.date === streak.today.date ? "current" : ""
             }
             title={d.date + ": " + d.completed + "/" + d.total}
           >

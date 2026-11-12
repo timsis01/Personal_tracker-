@@ -1,15 +1,17 @@
 import React, { useState } from "react";
 import { createRoot } from "react-dom/client";
-import { AuthForm } from "./ui.jsx";
-import { Workspace } from "./workspace.jsx";
+import { AuthForm } from "./ui";
+import { Workspace } from "./workspace";
+import { ApiError, isRecord } from "./types";
+import type { Session, ProfileData, HttpMethod } from "./types";
 const API = location.port === "5173" ? "http://localhost:8000/api" : "/api";
 function App() {
-  const [session, setSession] = useState(() => ({
+  const [session, setSession] = useState<Session>(() => ({
     token: localStorage.token || "",
     username: localStorage.username || "",
   }));
   const [auth, setAuth] = useState(false);
-  async function api(path, data, method) {
+  async function api<T>(path: string, data?: unknown, method?: HttpMethod): Promise<T> {
     let response;
     try {
       response = await fetch(API + path, {
@@ -23,30 +25,35 @@ function App() {
     } catch {
       throw Error("Сервер недоступен. Попробуйте ещё раз.");
     }
-    const body = await response.json().catch(() => ({}));
+    const body: unknown = await response.json().catch(() => ({}));
+    const errorBody = isRecord(body) ? body : {};
     if (!response.ok) {
       if (response.status === 401 && session.token) {
         logout();
         setAuth(true);
       }
-      const e = Error(body.error || "Не удалось сохранить изменения.");
-      if (body.errors)
+      const e = new ApiError(
+        typeof errorBody.error === "string"
+          ? errorBody.error
+          : "Не удалось сохранить изменения.",
+      );
+      if (isRecord(errorBody.errors))
         e.fields = Object.fromEntries(
-          Object.entries(body.errors).map(([k, v]) => [
+          Object.entries(errorBody.errors).map(([k, v]) => [
             k,
-            Array.isArray(v) ? v.join(" ") : v,
+            Array.isArray(v) ? v.join(" ") : String(v),
           ]),
         );
       throw e;
     }
-    return body;
+    return body as T;
   }
   function logout() {
     localStorage.removeItem("token");
     localStorage.removeItem("username");
     setSession({ token: "", username: "" });
   }
-  function updateSession(data) {
+  function updateSession(data: ProfileData | Session) {
     setSession((current) => {
       const next = { ...current, ...data };
       localStorage.token = next.token;
@@ -79,4 +86,4 @@ function App() {
   );
 }
 
-createRoot(document.getElementById("root")).render(<App />);
+createRoot(document.getElementById("root")!).render(<App />);

@@ -1,3 +1,4 @@
+import type { ProgressHabit, CompletionEntry } from "../types";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
@@ -7,7 +8,7 @@ import {
   findHabits,
   shift,
   weekday,
-} from "../tracking.js";
+} from "../tracking";
 const sport = {
   id: 1,
   title: "Спорт",
@@ -40,10 +41,7 @@ test("месяцы 2024–2028: все даты ровно один раз, не
       const anchor = `${year}-${String(month).padStart(2, "0")}-15`;
       const p = calendarPeriod(anchor, "month"),
         groups = calendarWeeks(p.days);
-      assert.equal(
-        p.days.length,
-        new Date(Date.UTC(year, month, 0)).getUTCDate(),
-      );
+      assert.equal(p.days.length, new Date(Date.UTC(year, month, 0)).getUTCDate());
       assert.deepEqual(groups.flat(), p.days);
       assert.equal(new Set(groups.flat()).size, p.days.length);
       assert.ok(groups.every((g) => g.length >= 1 && g.length <= 7));
@@ -61,17 +59,17 @@ test("високосный февраль и ноябрь, начинающий�
   assert.equal(shift("2024-02-29", 1), "2024-03-01");
 });
 
-import { globalStreak } from "../tracking.js";
+import { globalStreak } from "../tracking";
 const habit = (
-  id,
-  dates,
+  id: number,
+  dates: string[],
   weekdays = [0, 1, 2, 3, 4, 5, 6],
   start_date = "2026-11-09",
-) => ({
+): ProgressHabit & { id: number; entries: Record<string, CompletionEntry> } => ({
   id,
   start_date,
   weekdays,
-  entries: Object.fromEntries(dates.map((date) => [date, { status: "done" }])),
+  entries: Object.fromEntries(dates.map((date) => [date, { status: "done" as const }])),
 });
 test("общая серия требует выполнения всех привычек дня, а не самой длинной личной серии", () => {
   const a = habit(1, ["2026-11-09", "2026-11-10", "2026-11-11", "2026-11-12"]);
@@ -95,12 +93,7 @@ test("пропуск одной привычки обрывает общую с�
   assert.equal(s.best, 2);
 });
 test("выходные нейтральны и не добавляют фиктивные дни в общую серию", () => {
-  const a = habit(
-    1,
-    ["2026-11-06", "2026-11-09", "2026-11-11"],
-    [0, 2, 4],
-    "2026-11-06",
-  );
+  const a = habit(1, ["2026-11-06", "2026-11-09", "2026-11-11"], [0, 2, 4], "2026-11-06");
   const s = globalStreak([a], "2026-11-12");
   assert.equal(s.current, 3);
   assert.equal(s.best, 3);
@@ -126,5 +119,7 @@ test("пустой и полностью будущий план не созда
   );
 });
 
-import {week} from "../tracking.js";
-test("дни недели отображаются читаемой кириллицей",()=>{assert.deepEqual(week,["Пн","Вт","Ср","Чт","Пт","Сб","Вс"])});
+import { week } from "../tracking";
+test("дни недели отображаются читаемой кириллицей", () => {
+  assert.deepEqual(week, ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]);
+});
